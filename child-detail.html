@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yıldız Çocuklar — Çocuk Detayı</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="js/client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/toast.js"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
+
+  <div id="navbar"></div>
+
+  <!-- Hero başlık -->
+  <div id="heroSection"
+       class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-8 px-4">
+    <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-6">
+      <span id="heroAvatar" class="text-8xl drop-shadow-lg"></span>
+      <div class="text-center sm:text-left">
+        <div id="heroName"  class="text-4xl font-black drop-shadow"></div>
+        <div id="heroSince" class="text-purple-200 font-semibold text-sm mt-1"></div>
+        <!-- Net puan büyük gösterim -->
+        <div class="mt-3 flex flex-wrap gap-3 justify-center sm:justify-start">
+          <div class="bg-white/20 backdrop-blur rounded-2xl px-4 py-2 text-center">
+            <div id="heroReward"  class="font-black text-2xl text-yellow-300"></div>
+            <div class="text-xs font-bold text-white/80">⭐ Ödül Puanı</div>
+          </div>
+          <div class="bg-white/20 backdrop-blur rounded-2xl px-4 py-2 text-center">
+            <div id="heroPenalty" class="font-black text-2xl text-red-300"></div>
+            <div class="text-xs font-bold text-white/80">⚡ Ceza Puanı</div>
+          </div>
+          <div class="bg-white/20 backdrop-blur rounded-2xl px-4 py-2 text-center">
+            <div id="heroNet"     class="font-black text-2xl"></div>
+            <div class="text-xs font-bold text-white/80">🏆 Net Puan</div>
+          </div>
+        </div>
+      </div>
+      <!-- Butonlar -->
+      <div class="sm:ml-auto flex gap-3 flex-wrap justify-center">
+        <button onclick="openEditModal()"
+                class="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white
+                       font-black px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105 backdrop-blur">
+          ✏️ Düzenle
+        </button>
+        <button onclick="openPointModal('reward')"
+                class="flex items-center gap-2 bg-green-400 hover:bg-green-500 text-white
+                       font-black px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105">
+          ⭐ Ödül Ver
+        </button>
+        <button onclick="openPointModal('penalty')"
+                class="flex items-center gap-2 bg-red-400 hover:bg-red-500 text-white
+                       font-black px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105">
+          ⚡ Ceza Ver
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Tab -->
+    <div class="flex gap-3 mb-6 bg-white rounded-2xl p-2 shadow-sm border border-purple-100 w-fit">
+      <button id="dtab-reward" onclick="switchTab('reward')"
+              class="tab-btn active px-5 py-2 rounded-xl font-black text-sm transition-all">
+        ⭐ Ödül Geçmişi
+      </button>
+      <button id="dtab-penalty" onclick="switchTab('penalty')"
+              class="tab-btn px-5 py-2 rounded-xl font-black text-sm transition-all text-purple-600">
+        ⚡ Ceza Geçmişi
+      </button>
+    </div>
+
+    <!-- Ödül geçmişi -->
+    <div id="dpanel-reward">
+      <div id="rewardLogList" class="space-y-3">
+        <div class="text-center py-8"><div class="text-4xl animate-spin">⭐</div></div>
+      </div>
+    </div>
+
+    <!-- Ceza geçmişi -->
+    <div id="dpanel-penalty" class="hidden">
+      <div id="penaltyLogList" class="space-y-3">
+        <div class="text-center py-8"><div class="text-4xl animate-spin">⚡</div></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Puan Verme Modalı -->
+  <div id="pointModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="pointModalTitle" class="text-2xl font-black text-purple-700"></h3>
+        <button onclick="closePointModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+      </div>
+
+      <!-- Kural seçimi -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Kural Seç <span class="text-red-400">*</span></label>
+      <select id="pointRuleSelect"
+              class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                     focus:outline-none focus:border-purple-500 mb-4 text-base">
+        <option value="">— Kural seçin —</option>
+      </select>
+
+      <!-- Seçilen kural önizlemesi -->
+      <div id="rulePreview" class="hidden bg-purple-50 rounded-2xl p-3 mb-4 flex items-center gap-3">
+        <span id="previewIcon"   class="text-3xl"></span>
+        <div>
+          <div id="previewTitle"  class="font-black text-gray-800"></div>
+          <div id="previewDesc"   class="text-sm text-gray-500"></div>
+          <div id="previewPoints" class="font-black text-purple-700"></div>
+        </div>
+      </div>
+
+      <!-- Not -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Not (isteğe bağlı)</label>
+      <input id="pointNote" type="text" placeholder="Bugün ne oldu?"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-5 text-base">
+
+      <button id="pointSaveBtn" onclick="savePoint()"
+              class="w-full font-black text-lg py-4 rounded-2xl text-white
+                     transition-all hover:scale-105 active:scale-95 shadow-lg">
+        Kaydet
+      </button>
+    </div>
+  </div>
+
+  <!-- Çocuk Düzenleme Modalı -->
+  <div id="editChildModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-2xl font-black text-purple-700">✏️ Çocuğu Düzenle</h3>
+        <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+      </div>
+
+      <!-- Ad -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Çocuğun Adı <span class="text-red-400">*</span></label>
+      <input id="editChildName" type="text" placeholder="Örn: Ali, Zeynep…"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-4 text-base">
+
+      <!-- Avatar seçimi -->
+      <label class="block text-sm font-bold text-gray-600 mb-2">Avatar Seç</label>
+      <div id="editAvatarPicker"
+           class="flex flex-wrap gap-2 mb-5 p-3 bg-purple-50 rounded-2xl max-h-40 overflow-y-auto">
+      </div>
+      <input type="hidden" id="editChildAvatar">
+
+      <button onclick="saveChildEdit()"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
+                     py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+        💾 Kaydet
+      </button>
+    </div>
+  </div>
+
+  <!-- Kayıt Silme Onayı -->
+  <div id="logDeleteModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center">
+      <div class="text-5xl mb-3">🗑️</div>
+      <h3 class="text-xl font-black text-gray-800 mb-2">Kaydı Sil</h3>
+      <p class="text-gray-500 font-semibold mb-6">Bu puan kaydı silinecek ve puanlar güncellenecek.</p>
+      <div class="flex gap-3">
+        <button onclick="closeLogDeleteModal()"
+                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl">
+          İptal
+        </button>
+        <button id="confirmLogDeleteBtn"
+                class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl">
+          🗑️ Sil
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const AVATARS = [
+      '👦','👧','🧒','👶','🧑','🙋‍♂️','🙋‍♀️','🏃‍♂️','🏃‍♀️',
+      '🧗‍♂️','🎮','🎨','⚽','🎵','📚','🦸‍♂️','🦸‍♀️','🧙‍♂️','🧙‍♀️','🐱',
+    ];
+
+    const params  = new URLSearchParams(location.search);
+    const childId = params.get('id');
+
+    let currentTab        = 'reward';
+    let currentPointType  = 'reward';
+    let logDeleteId       = null;
+    let logDeleteType     = null;
+    let rulesCache        = { reward: [], penalty: [] };
+    let currentChild      = null;
+
+    if (!childId) { window.location.href = 'children.html'; }
+
+    (async () => {
+      const session = await requireAuth();
+      if (!session) return;
+      renderNav('children');
+      await loadChild();
+      await loadRulesCache();
+      await loadLogs('reward');
+      await loadLogs('penalty');
+    })();
+
+    /* ── Çocuk bilgileri ── */
+    async function loadChild() {
+      const { data } = await supabaseClient
+        .from('children_scores')
+        .select('*')
+        .eq('id', childId)
+        .single();
+
+      if (!data) { window.location.href = 'children.html'; return; }
+
+      currentChild = data;
+      document.title = `${data.name} — Yıldız Çocuklar`;
+      document.getElementById('heroAvatar').textContent = data.avatar;
+      document.getElementById('heroName').textContent   = data.name;
+      document.getElementById('heroSince').textContent  =
+        `${new Date(data.created_at).toLocaleDateString('tr-TR')} tarihinden beri takip ediliyor`;
+
+      document.getElementById('heroReward').textContent  = data.total_reward_points;
+      document.getElementById('heroPenalty').textContent = data.total_penalty_points;
+
+      const net = data.net_score;
+      const netEl = document.getElementById('heroNet');
+      netEl.textContent = (net >= 0 ? '+' : '') + net;
+      netEl.className   = `font-black text-2xl ${net >= 0 ? 'text-green-300' : 'text-red-300'}`;
+    }
+
+    /* ── Çocuk düzenleme modalı ── */
+    function openEditModal() {
+      if (!currentChild) return;
+      document.getElementById('editChildName').value   = currentChild.name;
+      document.getElementById('editChildAvatar').value = currentChild.avatar;
+      buildEditAvatarPicker(currentChild.avatar);
+      document.getElementById('editChildModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editChildModal').classList.add('hidden');
+    }
+
+    function buildEditAvatarPicker(selected) {
+      const picker = document.getElementById('editAvatarPicker');
+      picker.innerHTML = AVATARS.map(a =>
+        `<button type="button"
+                 class="emoji-btn ${a === selected ? 'selected' : ''}"
+                 data-emoji="${a}"
+                 onclick="selectEditAvatar('${a}')">${a}</button>`
+      ).join('');
+    }
+
+    function selectEditAvatar(emoji) {
+      document.getElementById('editChildAvatar').value = emoji;
+      document.querySelectorAll('#editAvatarPicker .emoji-btn').forEach(b => {
+        b.classList.toggle('selected', b.dataset.emoji === emoji);
+      });
+    }
+
+    async function saveChildEdit() {
+      const name   = document.getElementById('editChildName').value.trim();
+      const avatar = document.getElementById('editChildAvatar').value;
+
+      if (!name) { showToast('Çocuğun adını girin!', 'warning'); return; }
+
+      const { error } = await supabaseClient
+        .from('children')
+        .update({ name, avatar })
+        .eq('id', childId);
+
+      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+
+      showToast('✅ Bilgiler güncellendi!', 'success');
+      closeEditModal();
+      await loadChild();
+    }
+
+    /* ── Kuralları önbelleğe al ── */
+    async function loadRulesCache() {
+      const [{ data: rr }, { data: pr }] = await Promise.all([
+        supabaseClient.from('reward_rules').select('*').order('title'),
+        supabaseClient.from('penalty_rules').select('*').order('title'),
+      ]);
+      rulesCache.reward  = rr  || [];
+      rulesCache.penalty = pr || [];
+    }
+
+    /* ── Log listesi ── */
+    async function loadLogs(type) {
+      const table   = type === 'reward' ? 'reward_logs' : 'penalty_logs';
+      const listId  = type === 'reward' ? 'rewardLogList' : 'penaltyLogList';
+      const isReward = type === 'reward';
+
+      const { data } = await supabaseClient
+        .from(table)
+        .select('*')
+        .eq('child_id', childId)
+        .order('created_at', { ascending: false });
+
+      const el = document.getElementById(listId);
+
+      if (!data || data.length === 0) {
+        el.innerHTML = `
+          <div class="text-center py-10">
+            <div class="text-5xl mb-3">${isReward ? '⭐' : '⚡'}</div>
+            <p class="text-gray-400 font-bold">Henüz ${isReward ? 'ödül' : 'ceza'} kaydı yok</p>
+          </div>`;
+        return;
+      }
+
+      el.innerHTML = data.map(log => {
+        const dt = new Date(log.created_at).toLocaleString('tr-TR', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit',
+        });
+        return `
+          <div class="log-${type} rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 flex-1 min-w-0">
+              <span class="text-3xl flex-shrink-0">${log.rule_icon || (isReward ? '⭐' : '⚡')}</span>
+              <div class="min-w-0">
+                <div class="font-black text-gray-800 truncate">${log.rule_title}</div>
+                ${log.note ? `<div class="text-sm text-gray-500 truncate italic">"${log.note}"</div>` : ''}
+                <div class="text-xs text-gray-400 font-semibold">${dt}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class="font-black text-xl ${isReward ? 'text-green-600' : 'text-red-500'}">
+                ${isReward ? '+' : '-'}${log.points}
+              </span>
+              <button onclick="confirmLogDelete('${type}','${log.id}')"
+                      class="text-gray-300 hover:text-red-400 transition-colors text-lg p-1 rounded-lg
+                             hover:bg-red-50" title="Kaydı sil">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    /* ── Tab ── */
+    function switchTab(tab) {
+      currentTab = tab;
+      ['reward','penalty'].forEach(t => {
+        document.getElementById(`dtab-${t}`).classList.toggle('active', t === tab);
+        document.getElementById(`dtab-${t}`).classList.toggle('text-purple-600', t !== tab);
+        document.getElementById(`dpanel-${t}`).classList.toggle('hidden', t !== tab);
+      });
+    }
+
+    /* ── Puan verme modalı ── */
+    async function openPointModal(type) {
+      currentPointType = type;
+      const isReward   = type === 'reward';
+
+      document.getElementById('pointModalTitle').textContent =
+        isReward ? '⭐ Ödül Ver' : '⚡ Ceza Ver';
+
+      const btn = document.getElementById('pointSaveBtn');
+      btn.style.background = isReward ? '#22c55e' : '#ef4444';
+      btn.textContent = isReward ? '⭐ Ödülü Kaydet' : '⚡ Cezayı Kaydet';
+
+      const rules = rulesCache[type];
+      const sel   = document.getElementById('pointRuleSelect');
+      sel.innerHTML = '<option value="">— Kural seçin —</option>' +
+        rules.map(r =>
+          `<option value="${r.id}" data-points="${r.points}" data-icon="${r.icon}"
+                   data-title="${r.title.replace(/"/g,'&quot;')}"
+                   data-desc="${(r.description||'').replace(/"/g,'&quot;')}">
+            ${r.icon} ${r.title} (${r.points} puan)
+          </option>`
+        ).join('');
+
+      document.getElementById('pointNote').value = '';
+      document.getElementById('rulePreview').classList.add('hidden');
+      document.getElementById('pointModal').classList.remove('hidden');
+    }
+
+    function closePointModal() {
+      document.getElementById('pointModal').classList.add('hidden');
+    }
+
+    /* Kural seçilince önizle */
+    document.addEventListener('change', e => {
+      if (e.target.id !== 'pointRuleSelect') return;
+      const opt = e.target.options[e.target.selectedIndex];
+      const prev = document.getElementById('rulePreview');
+      if (!e.target.value) { prev.classList.add('hidden'); return; }
+      document.getElementById('previewIcon').textContent   = opt.dataset.icon;
+      document.getElementById('previewTitle').textContent  = opt.dataset.title;
+      document.getElementById('previewDesc').textContent   = opt.dataset.desc;
+      document.getElementById('previewPoints').textContent =
+        `${currentPointType === 'reward' ? '+' : '-'}${opt.dataset.points} puan`;
+      prev.classList.remove('hidden');
+    });
+
+    async function savePoint() {
+      const sel   = document.getElementById('pointRuleSelect');
+      const opt   = sel.options[sel.selectedIndex];
+      const note  = document.getElementById('pointNote').value.trim();
+
+      if (!sel.value) { showToast('Lütfen bir kural seçin!', 'warning'); return; }
+
+      const table = currentPointType === 'reward' ? 'reward_logs' : 'penalty_logs';
+      const { error } = await supabaseClient.from(table).insert({
+        child_id:   childId,
+        rule_id:    sel.value,
+        rule_title: opt.dataset.title,
+        rule_icon:  opt.dataset.icon,
+        points:     parseInt(opt.dataset.points),
+        note,
+      });
+
+      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+
+      showToast(currentPointType === 'reward' ? '⭐ Ödül verildi!' : '⚡ Ceza kaydedildi!',
+                currentPointType === 'reward' ? 'success' : 'info');
+      closePointModal();
+      await loadChild();
+      await loadLogs(currentPointType);
+    }
+
+    /* ── Log silme ── */
+    function confirmLogDelete(type, id) {
+      logDeleteId   = id;
+      logDeleteType = type;
+      document.getElementById('logDeleteModal').classList.remove('hidden');
+      document.getElementById('confirmLogDeleteBtn').onclick = deleteLog;
+    }
+
+    function closeLogDeleteModal() {
+      document.getElementById('logDeleteModal').classList.add('hidden');
+    }
+
+    async function deleteLog() {
+      const table = logDeleteType === 'reward' ? 'reward_logs' : 'penalty_logs';
+      const { error } = await supabaseClient.from(table).delete().eq('id', logDeleteId);
+      if (error) { showToast('Silme hatası: ' + error.message, 'error'); return; }
+      showToast('🗑️ Kayıt silindi!', 'info');
+      closeLogDeleteModal();
+      await loadChild();
+      await loadLogs(logDeleteType);
+    }
+
+    /* Modal dışına tıklayınca kapat */
+    ['pointModal','logDeleteModal','editChildModal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', e => {
+        if (e.target.id === id) document.getElementById(id).classList.add('hidden');
+      });
+    });
+  </script>
+</body>
+</html>

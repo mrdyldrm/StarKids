@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yıldız Çocuklar — Çocuklar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="js/client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/toast.js"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
+
+  <div id="navbar"></div>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+      <div>
+        <h2 class="text-3xl font-black text-purple-800">👨‍👩‍👧‍👦 Çocuklar</h2>
+        <p class="text-purple-400 font-semibold">Kayıtlı çocukları yönetin</p>
+      </div>
+      <button onclick="openModal()"
+              class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white
+                     font-bold px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105">
+        ➕ Yeni Çocuk
+      </button>
+    </div>
+
+    <div id="childrenGrid"
+         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="col-span-full text-center py-12">
+        <div class="text-5xl animate-spin">⭐</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Ekle / Düzenle Modal -->
+  <div id="modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="modalTitle" class="text-2xl font-black text-purple-700">Çocuk Ekle</h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+      </div>
+
+      <input type="hidden" id="editId">
+
+      <!-- Ad -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Çocuğun Adı <span class="text-red-400">*</span></label>
+      <input id="childName" type="text" placeholder="Örn: Ali, Zeynep…"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-4 text-base">
+
+      <!-- Avatar seçimi -->
+      <label class="block text-sm font-bold text-gray-600 mb-2">Avatar Seç</label>
+      <div id="avatarPicker" class="flex flex-wrap gap-2 mb-5 p-3 bg-purple-50 rounded-2xl">
+      </div>
+      <input type="hidden" id="childAvatar" value="🧒">
+
+      <button onclick="saveChild()"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
+                     py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+        💾 Kaydet
+      </button>
+    </div>
+  </div>
+
+  <!-- Silme Onayı Modal -->
+  <div id="deleteModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center">
+      <div class="text-6xl mb-3">🗑️</div>
+      <h3 class="text-2xl font-black text-gray-800 mb-2">Emin misiniz?</h3>
+      <p class="text-gray-500 font-semibold mb-6">
+        <span id="deleteChildName" class="text-red-500 font-black"></span> adlı çocuk ve
+        tüm puan kayıtları <strong>kalıcı olarak</strong> silinecek.
+      </p>
+      <div class="flex gap-3">
+        <button onclick="closeDeleteModal()"
+                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold
+                       py-3 rounded-2xl transition-colors">
+          İptal
+        </button>
+        <button id="confirmDeleteBtn"
+                class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold
+                       py-3 rounded-2xl transition-colors">
+          🗑️ Sil
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const AVATARS = [
+      '👦','👧','🧒','👶','🧑','🙋‍♂️','🙋‍♀️','🏃‍♂️','🏃‍♀️',
+      '🧗‍♂️','🎮','🎨','⚽','🎵','📚','🦸‍♂️','🦸‍♀️','🧙‍♂️','🧙‍♀️','🐱',
+    ];
+
+    let deleteTargetId = null;
+
+    (async () => {
+      const session = await requireAuth();
+      if (!session) return;
+      renderNav('children');
+      buildAvatarPicker();
+      await loadChildren();
+    })();
+
+    function buildAvatarPicker() {
+      const picker = document.getElementById('avatarPicker');
+      picker.innerHTML = AVATARS.map(a =>
+        `<button type="button" class="emoji-btn" data-emoji="${a}" onclick="selectAvatar('${a}')">${a}</button>`
+      ).join('');
+    }
+
+    function selectAvatar(emoji) {
+      document.getElementById('childAvatar').value = emoji;
+      document.querySelectorAll('.emoji-btn').forEach(b => {
+        b.classList.toggle('selected', b.dataset.emoji === emoji);
+      });
+    }
+
+    async function loadChildren() {
+      const { data, error } = await supabaseClient
+        .from('children_scores')
+        .select('*')
+        .order('name');
+
+      const grid = document.getElementById('childrenGrid');
+
+      if (error || !data || data.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-14">
+            <div class="text-6xl mb-4">👶</div>
+            <p class="text-gray-400 font-bold text-lg">Henüz çocuk eklenmemiş</p>
+            <button onclick="openModal()"
+                    class="mt-4 bg-purple-600 text-white font-bold px-6 py-3 rounded-2xl hover:bg-purple-700">
+              ➕ İlk Çocuğu Ekle
+            </button>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = data.map(c => `
+        <div class="bg-white rounded-3xl shadow-md border border-purple-100 p-5
+                    hover:border-purple-300 transition-all flex flex-col gap-4">
+          <!-- Üst -->
+          <div class="flex items-center gap-3">
+            <span class="text-5xl">${c.avatar}</span>
+            <div class="flex-1">
+              <div class="font-black text-xl text-gray-800">${c.name}</div>
+              <div class="text-xs text-gray-400 font-semibold">
+                ${new Date(c.created_at).toLocaleDateString('tr-TR')} tarihinde eklendi
+              </div>
+            </div>
+          </div>
+
+          <!-- Puanlar -->
+          <div class="grid grid-cols-3 gap-2 text-center text-sm">
+            <div class="bg-green-50 rounded-xl p-2 border border-green-100">
+              <div class="font-black text-green-700 text-xl">${c.total_reward_points}</div>
+              <div class="text-green-500 font-bold text-xs">⭐ Ödül</div>
+            </div>
+            <div class="bg-red-50 rounded-xl p-2 border border-red-100">
+              <div class="font-black text-red-600 text-xl">${c.total_penalty_points}</div>
+              <div class="text-red-400 font-bold text-xs">⚡ Ceza</div>
+            </div>
+            <div class="${c.net_score >= 0 ? 'bg-blue-50 border-blue-100' : 'bg-orange-50 border-orange-100'} rounded-xl p-2 border">
+              <div class="font-black text-xl ${c.net_score >= 0 ? 'text-blue-600' : 'text-orange-600'}">
+                ${c.net_score >= 0 ? '+' : ''}${c.net_score}
+              </div>
+              <div class="font-bold text-xs ${c.net_score >= 0 ? 'text-blue-400' : 'text-orange-400'}">🏆 Net</div>
+            </div>
+          </div>
+
+          <!-- Butonlar -->
+          <div class="flex gap-2">
+            <a href="child-detail.html?id=${c.id}"
+               class="flex-1 text-center bg-purple-100 hover:bg-purple-200 text-purple-700
+                      font-bold py-2 rounded-xl text-sm transition-colors">
+              📊 Detay
+            </a>
+            <button onclick="openModal('${c.id}','${c.name}','${c.avatar}')"
+                    class="flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700
+                           font-bold py-2 rounded-xl text-sm transition-colors">
+              ✏️ Düzenle
+            </button>
+            <button onclick="confirmDelete('${c.id}','${c.name}')"
+                    class="flex-1 bg-red-100 hover:bg-red-200 text-red-600
+                           font-bold py-2 rounded-xl text-sm transition-colors">
+              🗑️ Sil
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* Modal */
+    function openModal(id = '', name = '', avatar = '🧒') {
+      document.getElementById('editId').value       = id;
+      document.getElementById('childName').value    = name;
+      document.getElementById('childAvatar').value  = avatar;
+      document.getElementById('modalTitle').textContent = id ? '✏️ Çocuğu Düzenle' : '➕ Çocuk Ekle';
+      selectAvatar(avatar);
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    async function saveChild() {
+      const id     = document.getElementById('editId').value;
+      const name   = document.getElementById('childName').value.trim();
+      const avatar = document.getElementById('childAvatar').value;
+
+      if (!name) { showToast('Çocuğun adını girin!', 'warning'); return; }
+
+      let error;
+      if (id) {
+        ({ error } = await supabaseClient.from('children').update({ name, avatar }).eq('id', id));
+      } else {
+        ({ error } = await supabaseClient.from('children').insert({ name, avatar }));
+      }
+
+      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+
+      showToast(id ? '✏️ Çocuk güncellendi!' : '✅ Çocuk eklendi!', 'success');
+      closeModal();
+      await loadChildren();
+    }
+
+    /* Silme onayı */
+    function confirmDelete(id, name) {
+      deleteTargetId = id;
+      document.getElementById('deleteChildName').textContent = name;
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('confirmDeleteBtn').onclick = deleteChild;
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+      deleteTargetId = null;
+    }
+
+    async function deleteChild() {
+      if (!deleteTargetId) return;
+      const { error } = await supabaseClient.from('children').delete().eq('id', deleteTargetId);
+      if (error) { showToast('Silme hatası: ' + error.message, 'error'); return; }
+      showToast('🗑️ Çocuk silindi!', 'info');
+      closeDeleteModal();
+      await loadChildren();
+    }
+
+    /* Modal dışına tıklayınca kapat */
+    ['modal','deleteModal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', e => {
+        if (e.target.id === id) document.getElementById(id).classList.add('hidden');
+      });
+    });
+  </script>
+</body>
+</html>

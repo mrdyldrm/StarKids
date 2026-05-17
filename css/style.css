@@ -1,0 +1,133 @@
+/* =====================================================
+   Yıldız Çocuklar — Özel Stiller
+   ===================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+* { font-family: 'Nunito', sans-serif !important; }
+
+/* ── Arka plan animasyonu ── */
+@keyframes float {
+  0%, 100% { transform: translateY(0)    rotate(0deg);   opacity: .7; }
+  50%       { transform: translateY(-18px) rotate(20deg); opacity: 1;  }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: .4; transform: scale(1);   }
+  50%       { opacity: 1;  transform: scale(1.3); }
+}
+@keyframes slideInRight {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideOutRight {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(120%); opacity: 0; }
+}
+@keyframes popIn {
+  0%   { transform: scale(.5);  opacity: 0; }
+  70%  { transform: scale(1.1); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.floating-star { animation: float 3s ease-in-out infinite; }
+.twinkling    { animation: twinkle 2s ease-in-out infinite; }
+
+/* ── Kartlar ── */
+.child-card {
+  transition: transform .25s, box-shadow .25s;
+  cursor: pointer;
+}
+.child-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0,0,0,.15);
+}
+
+/* ── Log items ── */
+.log-reward {
+  border-left: 4px solid #10B981;
+  background: #ECFDF5;
+}
+.log-penalty {
+  border-left: 4px solid #EF4444;
+  background: #FEF2F2;
+}
+
+/* ── Puan rozet ── */
+.score-badge {
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  min-width: 260px;
+  animation: slideInRight .35s ease;
+}
+.toast.hiding { animation: slideOutRight .35s ease forwards; }
+
+/* ── Modal ── */
+.modal-overlay {
+  backdrop-filter: blur(4px);
+  background: rgba(0,0,0,.45);
+}
+.modal-box {
+  animation: popIn .3s ease;
+}
+
+/* ── Emoji picker ── */
+.emoji-btn {
+  font-size: 1.7rem;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: background .2s, border-color .2s, transform .15s;
+}
+.emoji-btn:hover   { background: #f3e8ff; transform: scale(1.2); }
+.emoji-btn.selected { border-color: #7C3AED; background: #ede9fe; }
+
+/* ── Gradient shimmer on net score ── */
+.score-shimmer {
+  background: linear-gradient(90deg, #7C3AED, #a78bfa, #7C3AED);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* ── Tab active ── */
+.tab-btn.active {
+  background: #7C3AED;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(124,58,237,.4);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar        { width: 8px; }
+::-webkit-scrollbar-track  { background: #f1f5f9; }
+::-webkit-scrollbar-thumb  { background: #c4b5fd; border-radius: 99px; }
+
+/* ── Sidebar nav links ── */
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #6b21a8;
+  transition: background .2s, color .2s;
+  text-decoration: none;
+}
+.nav-link:hover  { background: #ede9fe; }
+.nav-link.active { background: #7C3AED; color: #fff; }

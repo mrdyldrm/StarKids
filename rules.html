@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yıldız Çocuklar — Kurallar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="js/client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/toast.js"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
+
+  <div id="navbar"></div>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Başlık -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div>
+        <h2 class="text-3xl font-black text-purple-800">📋 Kurallar</h2>
+        <p class="text-purple-400 font-semibold">Ödül ve ceza kurallarını yönetin</p>
+      </div>
+    </div>
+
+    <!-- Tab geçişi -->
+    <div class="flex gap-3 mb-6 bg-white rounded-2xl p-2 shadow-sm border border-purple-100 w-fit">
+      <button id="tab-reward" onclick="switchTab('reward')"
+              class="tab-btn active px-6 py-3 rounded-xl font-black text-base transition-all">
+        ⭐ Ödül Kuralları
+      </button>
+      <button id="tab-penalty" onclick="switchTab('penalty')"
+              class="tab-btn px-6 py-3 rounded-xl font-black text-base transition-all text-purple-600">
+        ⚡ Ceza Kuralları
+      </button>
+    </div>
+
+    <!-- Panel: Ödül -->
+    <div id="panel-reward">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-black text-green-700">⭐ Ödül Kuralları</h3>
+        <button onclick="openModal('reward')"
+                class="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white
+                       font-bold px-4 py-2 rounded-2xl shadow-lg transition-all hover:scale-105">
+          ➕ Yeni Kural
+        </button>
+      </div>
+      <div id="rewardList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="col-span-full text-center py-8">
+          <div class="text-4xl animate-spin">⭐</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel: Ceza -->
+    <div id="panel-penalty" class="hidden">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-black text-red-600">⚡ Ceza Kuralları</h3>
+        <button onclick="openModal('penalty')"
+                class="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white
+                       font-bold px-4 py-2 rounded-2xl shadow-lg transition-all hover:scale-105">
+          ➕ Yeni Kural
+        </button>
+      </div>
+      <div id="penaltyList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="col-span-full text-center py-8">
+          <div class="text-4xl animate-spin">⚡</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Ekle / Düzenle Modal -->
+  <div id="ruleModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="ruleModalTitle" class="text-2xl font-black text-purple-700">Kural Ekle</h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+      </div>
+
+      <input type="hidden" id="ruleEditId">
+      <input type="hidden" id="ruleEditType">
+
+      <!-- Kural Adı -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Kural Adı <span class="text-red-400">*</span></label>
+      <input id="ruleTitle" type="text" placeholder="Örn: Ödevini Yaptı"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-3 text-base">
+
+      <!-- Açıklama -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Açıklama</label>
+      <input id="ruleDescription" type="text" placeholder="Kısa açıklama (isteğe bağlı)"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-3 text-base">
+
+      <!-- Puan -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Puan <span class="text-red-400">*</span></label>
+      <input id="rulePoints" type="number" min="1" max="1000" placeholder="10"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-4 text-base">
+
+      <!-- İkon -->
+      <label class="block text-sm font-bold text-gray-600 mb-2">İkon Seç</label>
+      <div id="iconPicker" class="flex flex-wrap gap-2 mb-5 p-3 bg-purple-50 rounded-2xl max-h-36 overflow-y-auto">
+      </div>
+      <input type="hidden" id="ruleIcon" value="⭐">
+
+      <button onclick="saveRule()"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
+                     py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+        💾 Kaydet
+      </button>
+    </div>
+  </div>
+
+  <!-- Silme Onayı -->
+  <div id="deleteModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center">
+      <div class="text-6xl mb-3">🗑️</div>
+      <h3 class="text-xl font-black text-gray-800 mb-2">Kuralı Sil</h3>
+      <p class="text-gray-500 font-semibold mb-6">
+        "<span id="deleteRuleName" class="text-red-500 font-black"></span>" kuralı silinecek.
+        Bu kurala ait geçmiş kayıtlar <strong>korunacak</strong>.
+      </p>
+      <div class="flex gap-3">
+        <button onclick="closeDeleteModal()"
+                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl">
+          İptal
+        </button>
+        <button id="confirmDeleteBtn"
+                class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl">
+          🗑️ Sil
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const REWARD_ICONS  = ['⭐','🌟','💛','🏆','🎖️','🥇','👍','✅','💪','🎉','📚','🦷','🏠','🤝','📖','🎨','🎵','⚽','🎓','🙌'];
+    const PENALTY_ICONS = ['⚠️','❌','😤','🚫','⛔','👎','😔','⏰','🤥','📱','🙉','😡','🔇','📵','🚷'];
+
+    let currentTab     = 'reward';
+    let deleteTargetId = null;
+    let deleteTargetType = null;
+
+    (async () => {
+      const session = await requireAuth();
+      if (!session) return;
+      renderNav('rules');
+      await loadRules('reward');
+      await loadRules('penalty');
+    })();
+
+    function switchTab(tab) {
+      currentTab = tab;
+      ['reward','penalty'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
+        document.getElementById(`tab-${t}`).classList.toggle('text-purple-600', t !== tab);
+        document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
+      });
+    }
+
+    /* ── Kural listesi ── */
+    async function loadRules(type) {
+      const table = type === 'reward' ? 'reward_rules' : 'penalty_rules';
+      const { data, error } = await supabaseClient
+        .from(table).select('*').order('title');
+
+      const listId = type === 'reward' ? 'rewardList' : 'penaltyList';
+      const list   = document.getElementById(listId);
+
+      if (error || !data || data.length === 0) {
+        const emoji  = type === 'reward' ? '⭐' : '⚡';
+        const label  = type === 'reward' ? 'ödül' : 'ceza';
+        list.innerHTML = `
+          <div class="col-span-full text-center py-10">
+            <div class="text-5xl mb-3">${emoji}</div>
+            <p class="text-gray-400 font-bold">Henüz ${label} kuralı eklenmemiş</p>
+            <button onclick="openModal('${type}')"
+                    class="mt-3 bg-purple-600 text-white font-bold px-5 py-2 rounded-2xl hover:bg-purple-700">
+              ➕ İlk Kuralı Ekle
+            </button>
+          </div>`;
+        return;
+      }
+
+      const isReward = type === 'reward';
+      list.innerHTML = data.map(r => `
+        <div class="bg-white rounded-2xl shadow-sm border ${isReward ? 'border-green-100' : 'border-red-100'}
+                    p-4 flex items-center gap-4 hover:shadow-md transition-shadow">
+          <span class="text-4xl flex-shrink-0">${r.icon}</span>
+          <div class="flex-1 min-w-0">
+            <div class="font-black text-gray-800 text-base truncate">${r.title}</div>
+            ${r.description ? `<div class="text-sm text-gray-400 font-semibold truncate">${r.description}</div>` : ''}
+            <div class="text-sm font-black mt-1 ${isReward ? 'text-green-600' : 'text-red-500'}">
+              ${isReward ? '+' : '-'}${r.points} puan
+            </div>
+          </div>
+          <div class="flex flex-col gap-2 flex-shrink-0">
+            <button onclick="openModal('${type}','${r.id}','${escJS(r.title)}','${escJS(r.description||'')}',${r.points},'${r.icon}')"
+                    class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-bold
+                           px-3 py-1 rounded-xl text-xs transition-colors">
+              ✏️ Düzenle
+            </button>
+            <button onclick="confirmDelete('${type}','${r.id}','${escJS(r.title)}')"
+                    class="bg-red-100 hover:bg-red-200 text-red-600 font-bold
+                           px-3 py-1 rounded-xl text-xs transition-colors">
+              🗑️ Sil
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escJS(s) { return s.replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+    /* ── Modal ── */
+    function openModal(type, id='', title='', desc='', points=10, icon='') {
+      currentTab = type;
+      const isReward = type === 'reward';
+      const defaultIcon = isReward ? '⭐' : '⚠️';
+
+      document.getElementById('ruleEditId').value      = id;
+      document.getElementById('ruleEditType').value    = type;
+      document.getElementById('ruleTitle').value       = title;
+      document.getElementById('ruleDescription').value = desc;
+      document.getElementById('rulePoints').value      = points;
+      document.getElementById('ruleIcon').value        = icon || defaultIcon;
+      document.getElementById('ruleModalTitle').textContent =
+        id ? `✏️ Kuralı Düzenle` : `➕ ${isReward ? 'Ödül' : 'Ceza'} Kuralı Ekle`;
+
+      buildIconPicker(type, icon || defaultIcon);
+      document.getElementById('ruleModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('ruleModal').classList.add('hidden');
+    }
+
+    function buildIconPicker(type, selected) {
+      const icons = type === 'reward' ? REWARD_ICONS : PENALTY_ICONS;
+      const picker = document.getElementById('iconPicker');
+      picker.innerHTML = icons.map(i =>
+        `<button type="button" class="emoji-btn ${i === selected ? 'selected' : ''}"
+                 data-icon="${i}" onclick="selectIcon('${i}')">${i}</button>`
+      ).join('');
+    }
+
+    function selectIcon(icon) {
+      document.getElementById('ruleIcon').value = icon;
+      document.querySelectorAll('#iconPicker .emoji-btn').forEach(b => {
+        b.classList.toggle('selected', b.dataset.icon === icon);
+      });
+    }
+
+    async function saveRule() {
+      const id    = document.getElementById('ruleEditId').value;
+      const type  = document.getElementById('ruleEditType').value;
+      const title = document.getElementById('ruleTitle').value.trim();
+      const desc  = document.getElementById('ruleDescription').value.trim();
+      const pts   = parseInt(document.getElementById('rulePoints').value);
+      const icon  = document.getElementById('ruleIcon').value;
+
+      if (!title)    { showToast('Kural adını girin!', 'warning'); return; }
+      if (!pts || pts < 1) { showToast('Geçerli bir puan girin!', 'warning'); return; }
+
+      const table   = type === 'reward' ? 'reward_rules' : 'penalty_rules';
+      const payload = { title, description: desc, points: pts, icon };
+      let error;
+
+      if (id) {
+        ({ error } = await supabaseClient.from(table).update(payload).eq('id', id));
+      } else {
+        ({ error } = await supabaseClient.from(table).insert(payload));
+      }
+
+      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+
+      showToast(id ? '✏️ Kural güncellendi!' : '✅ Kural eklendi!', 'success');
+      closeModal();
+      await loadRules(type);
+    }
+
+    /* ── Silme ── */
+    function confirmDelete(type, id, title) {
+      deleteTargetId   = id;
+      deleteTargetType = type;
+      document.getElementById('deleteRuleName').textContent = title;
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('confirmDeleteBtn').onclick = deleteRule;
+    }
+
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+    }
+
+    async function deleteRule() {
+      const table = deleteTargetType === 'reward' ? 'reward_rules' : 'penalty_rules';
+      const { error } = await supabaseClient.from(table).delete().eq('id', deleteTargetId);
+      if (error) { showToast('Silme hatası: ' + error.message, 'error'); return; }
+      showToast('🗑️ Kural silindi!', 'info');
+      closeDeleteModal();
+      await loadRules(deleteTargetType);
+    }
+
+    ['ruleModal','deleteModal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', e => {
+        if (e.target.id === id) document.getElementById(id).classList.add('hidden');
+      });
+    });
+  </script>
+</body>
+</html>
