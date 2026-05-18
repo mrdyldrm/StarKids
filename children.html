@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yıldız Çocuklar — Çocuklar</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/tailwind.css">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
@@ -12,43 +12,115 @@
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/toast.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/periods.js"></script>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
 
-  <div id="navbar"></div>
+  <div id="navbar">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 no-underline">
+          <span class="text-3xl">⭐</span>
+          <div>
+            <div class="font-black text-purple-700 text-xl leading-tight">Yıldız Çocuklar</div>
+            <div class="text-xs text-purple-400 font-semibold">Yönetim Paneli</div>
+          </div>
+        </a>
+        <div class="w-10 h-10 rounded-full bg-purple-100 animate-pulse"></div>
+      </div>
+    </nav>
+  </div>
 
   <main class="max-w-5xl mx-auto px-4 py-8">
-
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
       <div>
         <h2 class="text-3xl font-black text-purple-800">👨‍👩‍👧‍👦 Çocuklar</h2>
         <p class="text-purple-400 font-semibold">Kayıtlı çocukları yönetin</p>
       </div>
-      <button onclick="openModal()"
-              class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white
-                     font-bold px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105">
-        ➕ Yeni Çocuk
-      </button>
-    </div>
-
-    <div id="childrenGrid"
-         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      <div class="col-span-full text-center py-12">
-        <div class="text-5xl animate-spin">⭐</div>
+      <div class="flex gap-3">
+        <button onclick="openCatManagerModal()"
+                class="flex items-center gap-2 bg-white hover:bg-purple-50 text-purple-700
+                       font-bold px-4 py-3 rounded-2xl border-2 border-purple-200
+                       transition-all hover:border-purple-400">
+          🏷️ Kategoriler
+        </button>
+        <button onclick="openModal()"
+                class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white
+                       font-bold px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105">
+          ➕ Yeni Çocuk
+        </button>
       </div>
     </div>
 
+    <!-- Kategori filtresi -->
+    <div id="categoryFilterRow" class="hidden flex flex-wrap gap-2 mb-5"></div>
+
+    <div id="childrenGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="col-span-full text-center py-12"><div class="text-5xl animate-spin">⭐</div></div>
+    </div>
   </main>
 
   <!-- Ekle / Düzenle Modal -->
   <div id="modal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
-    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-5">
         <h3 id="modalTitle" class="text-2xl font-black text-purple-700">Çocuk Ekle</h3>
         <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
       </div>
 
       <input type="hidden" id="editId">
+      <input type="hidden" id="existingPhotoUrl">
+
+      <!-- Kategori -->
+      <div class="flex items-center justify-between mb-1">
+        <label class="text-sm font-bold text-gray-600">Kategori
+          <span class="text-gray-400 font-normal">(isteğe bağlı)</span>
+        </label>
+        <button type="button" onclick="openCatManagerModal()"
+                class="text-xs text-purple-500 hover:text-purple-700 font-semibold">
+          ⚙️ Kategorileri Düzenle
+        </button>
+      </div>
+      <select id="childCategory"
+              class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                     focus:outline-none focus:border-purple-500 mb-4 text-base bg-white">
+        <option value="">— Kategori seçin —</option>
+      </select>
+
+      <!-- Fotoğraf yükleme -->
+      <div class="flex flex-col items-center mb-5">
+        <!-- Fotoğraf önizleme (tıklanabilir) -->
+        <div id="photoCircle" onclick="document.getElementById('photoInput').click()"
+             class="relative w-28 h-28 rounded-full overflow-hidden border-4 border-purple-200
+                    cursor-pointer group shadow-md mb-3 bg-purple-50 flex items-center justify-center">
+          <img id="photoPreviewImg" src="" alt="" class="hidden w-full h-full object-cover">
+          <span id="photoPreviewEmoji" class="text-6xl"></span>
+          <!-- Hover overlay -->
+          <div class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center
+                      opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+            <span class="text-white text-2xl">📷</span>
+            <span class="text-white text-xs font-bold mt-1">Değiştir</span>
+          </div>
+        </div>
+
+        <input type="file" id="photoInput" accept="image/*" class="hidden"
+               onchange="handlePhotoSelect(this)">
+
+        <div class="flex gap-2">
+          <button type="button" onclick="document.getElementById('photoInput').click()"
+                  class="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700
+                         font-bold px-3 py-1.5 rounded-xl transition-colors">
+            📷 Fotoğraf Seç
+          </button>
+          <button type="button" id="removePhotoBtn" onclick="removePhoto()" class="hidden
+                  text-xs bg-red-100 hover:bg-red-200 text-red-600 font-bold px-3 py-1.5 rounded-xl">
+            🗑️ Kaldır
+          </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-1.5">JPG, PNG, WebP — max 5 MB</p>
+      </div>
 
       <!-- Ad -->
       <label class="block text-sm font-bold text-gray-600 mb-1">Çocuğun Adı <span class="text-red-400">*</span></label>
@@ -56,13 +128,14 @@
              class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
                     focus:outline-none focus:border-purple-500 mb-4 text-base">
 
-      <!-- Avatar seçimi -->
-      <label class="block text-sm font-bold text-gray-600 mb-2">Avatar Seç</label>
-      <div id="avatarPicker" class="flex flex-wrap gap-2 mb-5 p-3 bg-purple-50 rounded-2xl">
-      </div>
+      <!-- Avatar (fotoğraf yoksa kullanılır) -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">
+        Yedek Avatar <span class="text-gray-400 font-normal">(fotoğraf yoksa gösterilir)</span>
+      </label>
+      <div id="avatarPicker" class="flex flex-wrap gap-2 mb-5 p-3 bg-purple-50 rounded-2xl"></div>
       <input type="hidden" id="childAvatar" value="🧒">
 
-      <button onclick="saveChild()"
+      <button onclick="saveChild()" id="saveChildBtn"
               class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
                      py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
         💾 Kaydet
@@ -70,7 +143,47 @@
     </div>
   </div>
 
-  <!-- Silme Onayı Modal -->
+  <!-- Kategori Yönetim Modalı -->
+  <div id="catManagerModal"
+       class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-2xl font-black text-purple-700">🏷️ Kategoriler</h3>
+        <div class="flex gap-2">
+          <button onclick="openCatEditModal()"
+                  class="bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold
+                         px-3 py-1.5 rounded-xl text-sm">➕ Ekle</button>
+          <button onclick="closeCatManagerModal()"
+                  class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+        </div>
+      </div>
+      <div id="catManagerList" class="overflow-y-auto flex-1 space-y-2 pr-1"></div>
+    </div>
+  </div>
+
+  <!-- Kategori Ekle / Düzenle Modalı -->
+  <div id="catEditModal"
+       class="fixed inset-0 modal-overlay z-[60] hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="catEditTitle" class="text-xl font-black text-purple-700">🏷️ Kategori Ekle</h3>
+        <button onclick="closeCatEditModal()"
+                class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+      </div>
+      <input type="hidden" id="catEditId">
+      <label class="block text-sm font-bold text-gray-600 mb-1">Kategori Adı <span class="text-red-400">*</span></label>
+      <input id="catNameInput" type="text" placeholder="Örn: Küçükler, 1. Sınıf…"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-5 text-base">
+      <button onclick="saveCat()"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
+                     py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+        💾 Kaydet
+      </button>
+    </div>
+  </div>
+
+  <!-- Silme Onayı -->
   <div id="deleteModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
     <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center">
       <div class="text-6xl mb-3">🗑️</div>
@@ -81,18 +194,24 @@
       </p>
       <div class="flex gap-3">
         <button onclick="closeDeleteModal()"
-                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold
-                       py-3 rounded-2xl transition-colors">
+                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl">
           İptal
         </button>
         <button id="confirmDeleteBtn"
-                class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold
-                       py-3 rounded-2xl transition-colors">
+                class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl">
           🗑️ Sil
         </button>
       </div>
     </div>
   </div>
+
+  <style>
+    .cat-filter-btn.active {
+      background: #7C3AED !important;
+      color: #fff !important;
+      border-color: #7C3AED !important;
+    }
+  </style>
 
   <script>
     const AVATARS = [
@@ -100,38 +219,37 @@
       '🧗‍♂️','🎮','🎨','⚽','🎵','📚','🦸‍♂️','🦸‍♀️','🧙‍♂️','🧙‍♀️','🐱',
     ];
 
-    let deleteTargetId = null;
+    let deleteTargetId    = null;
+    let selectedPhotoFile = null;
+    let photoRemoved      = false;
+    let allChildrenData   = [];     // tüm çocuklar (filtre için)
+    let activeCategory    = '';     // seçili kategori filtresi
 
     (async () => {
       const session = await requireAuth();
       if (!session) return;
+      const ok = await requireRole(['admin']);
+      if (!ok) return;
       renderNav('children');
+      initPeriodsGlobal(); // navbar dönem butonları için
       buildAvatarPicker();
       await loadChildren();
     })();
 
-    function buildAvatarPicker() {
-      const picker = document.getElementById('avatarPicker');
-      picker.innerHTML = AVATARS.map(a =>
-        `<button type="button" class="emoji-btn" data-emoji="${a}" onclick="selectAvatar('${a}')">${a}</button>`
-      ).join('');
-    }
-
-    function selectAvatar(emoji) {
-      document.getElementById('childAvatar').value = emoji;
-      document.querySelectorAll('.emoji-btn').forEach(b => {
-        b.classList.toggle('selected', b.dataset.emoji === emoji);
-      });
+    /* ── Kart görünümü ── */
+    function childAvatar(c) {
+      if (c.photo_url) {
+        return `<img src="${c.photo_url}" alt="${c.name}"
+                     class="w-16 h-16 rounded-full object-cover border-2 border-purple-200 flex-shrink-0">`;
+      }
+      return `<span class="text-5xl flex-shrink-0">${c.avatar || '🧒'}</span>`;
     }
 
     async function loadChildren() {
       const { data, error } = await supabaseClient
-        .from('children_scores')
-        .select('*')
-        .order('name');
+        .from('children_scores').select('*').order('name');
 
       const grid = document.getElementById('childrenGrid');
-
       if (error || !data || data.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full text-center py-14">
@@ -142,24 +260,45 @@
               ➕ İlk Çocuğu Ekle
             </button>
           </div>`;
+        document.getElementById('categoryFilterRow').classList.add('hidden');
         return;
       }
 
-      grid.innerHTML = data.map(c => `
+      allChildrenData = data;
+      buildCategoryFilter(data);
+      renderChildrenGrid();
+    }
+
+    function renderChildrenGrid() {
+      const filtered = activeCategory
+        ? allChildrenData.filter(c => (c.category || '') === activeCategory)
+        : allChildrenData;
+
+      const grid = document.getElementById('childrenGrid');
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-10">
+            <div class="text-5xl mb-3">🔍</div>
+            <p class="text-gray-400 font-bold">"${activeCategory}" kategorisinde çocuk yok</p>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(c => `
         <div class="bg-white rounded-3xl shadow-md border border-purple-100 p-5
                     hover:border-purple-300 transition-all flex flex-col gap-4">
-          <!-- Üst -->
           <div class="flex items-center gap-3">
-            <span class="text-5xl">${c.avatar}</span>
+            ${childAvatar(c)}
             <div class="flex-1">
               <div class="font-black text-xl text-gray-800">${c.name}</div>
-              <div class="text-xs text-gray-400 font-semibold">
-                ${new Date(c.created_at).toLocaleDateString('tr-TR')} tarihinde eklendi
+              <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                ${c.category ? `<span class="text-xs bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-full">${c.category}</span>` : ''}
+                <span class="text-xs text-gray-400 font-semibold">
+                  ${new Date(c.created_at).toLocaleDateString('tr-TR')}
+                </span>
               </div>
             </div>
           </div>
-
-          <!-- Puanlar -->
           <div class="grid grid-cols-3 gap-2 text-center text-sm">
             <div class="bg-green-50 rounded-xl p-2 border border-green-100">
               <div class="font-black text-green-700 text-xl">${c.total_reward_points}</div>
@@ -176,35 +315,243 @@
               <div class="font-bold text-xs ${c.net_score >= 0 ? 'text-blue-400' : 'text-orange-400'}">🏆 Net</div>
             </div>
           </div>
-
-          <!-- Butonlar -->
           <div class="flex gap-2">
             <a href="child-detail.html?id=${c.id}"
                class="flex-1 text-center bg-purple-100 hover:bg-purple-200 text-purple-700
-                      font-bold py-2 rounded-xl text-sm transition-colors">
-              📊 Detay
-            </a>
-            <button onclick="openModal('${c.id}','${c.name}','${c.avatar}')"
+                      font-bold py-2 rounded-xl text-sm transition-colors">📊 Detay</a>
+            <button onclick="openModalById('${c.id}')"
                     class="flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700
-                           font-bold py-2 rounded-xl text-sm transition-colors">
-              ✏️ Düzenle
-            </button>
+                           font-bold py-2 rounded-xl text-sm transition-colors">✏️ Düzenle</button>
             <button onclick="confirmDelete('${c.id}','${c.name}')"
                     class="flex-1 bg-red-100 hover:bg-red-200 text-red-600
-                           font-bold py-2 rounded-xl text-sm transition-colors">
-              🗑️ Sil
-            </button>
+                           font-bold py-2 rounded-xl text-sm transition-colors">🗑️ Sil</button>
           </div>
-        </div>
-      `).join('');
+        </div>`).join('');
     }
 
-    /* Modal */
-    function openModal(id = '', name = '', avatar = '🧒') {
-      document.getElementById('editId').value       = id;
-      document.getElementById('childName').value    = name;
-      document.getElementById('childAvatar').value  = avatar;
-      document.getElementById('modalTitle').textContent = id ? '✏️ Çocuğu Düzenle' : '➕ Çocuk Ekle';
+    /* ════════════════════════════════════════════════
+       KATEGORİ YÖNETİMİ
+       ════════════════════════════════════════════════ */
+
+    let catDeleteId = null;
+
+    async function openCatManagerModal() {
+      await loadCatManagerList();
+      document.getElementById('catManagerModal').classList.remove('hidden');
+    }
+    function closeCatManagerModal() {
+      document.getElementById('catManagerModal').classList.add('hidden');
+    }
+
+    async function loadCatManagerList() {
+      const { data } = await supabaseClient.from('categories').select('*').order('name');
+      const el = document.getElementById('catManagerList');
+      if (!data || data.length === 0) {
+        el.innerHTML = `<div class="text-center py-8 text-gray-400 font-semibold">
+          Henüz kategori yok.<br>
+          <button onclick="openCatEditModal()" class="mt-3 bg-purple-600 text-white font-bold
+                  px-4 py-2 rounded-xl text-sm hover:bg-purple-700">➕ Ekle</button>
+        </div>`;
+        return;
+      }
+      el.innerHTML = data.map(c => `
+        <div class="flex items-center justify-between px-4 py-3 rounded-2xl
+                    border border-gray-100 bg-white hover:bg-purple-50 transition-colors">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">🏷️</span>
+            <span class="font-black text-gray-800">${c.name}</span>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="openCatEditModal('${c.id}','${c.name.replace(/'/g,"\\'")}')"
+                    class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-bold
+                           px-2 py-1 rounded-xl text-xs">✏️</button>
+            <button onclick="confirmCatDelete('${c.id}','${c.name.replace(/'/g,"\\'")}')"
+                    class="bg-red-100 hover:bg-red-200 text-red-600 font-bold
+                           px-2 py-1 rounded-xl text-xs">🗑️</button>
+          </div>
+        </div>`).join('');
+    }
+
+    function openCatEditModal(id = '', name = '') {
+      document.getElementById('catEditId').value  = id;
+      document.getElementById('catNameInput').value = name;
+      document.getElementById('catEditTitle').textContent = id ? '✏️ Kategoriyi Düzenle' : '🏷️ Kategori Ekle';
+      document.getElementById('catEditModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('catNameInput').focus(), 50);
+    }
+    function closeCatEditModal() {
+      document.getElementById('catEditModal').classList.add('hidden');
+    }
+
+    async function saveCat() {
+      const id   = document.getElementById('catEditId').value;
+      const name = document.getElementById('catNameInput').value.trim();
+      if (!name) { showToast('Kategori adını girin!', 'warning'); return; }
+      let error;
+      if (id) {
+        ({ error } = await supabaseClient.from('categories').update({ name }).eq('id', id));
+      } else {
+        ({ error } = await supabaseClient.from('categories').insert({ name }));
+      }
+      if (error) {
+        showToast(error.message?.includes('unique') ? 'Bu kategori zaten mevcut!' : 'Hata: ' + error.message, 'error');
+        return;
+      }
+      showToast(id ? '✏️ Güncellendi!' : '✅ Kategori eklendi!', 'success');
+      closeCatEditModal();
+      await loadCatManagerList();
+      /* Çocuk modalındaki select'i de yenile */
+      const selVal = document.getElementById('childCategory')?.value;
+      if (selVal !== undefined) await loadCategorySelect(selVal);
+      /* Filtre butonlarını da yenile */
+      if (allChildrenData.length) buildCategoryFilter(allChildrenData);
+    }
+
+    function confirmCatDelete(id, name) {
+      catDeleteId = id;
+      document.getElementById('deleteChildName').textContent = name + ' kategorisi';
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('confirmDeleteBtn').onclick = deleteCat;
+    }
+
+    async function deleteCat() {
+      const { error } = await supabaseClient.from('categories').delete().eq('id', catDeleteId);
+      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+      showToast('🗑️ Kategori silindi!', 'info');
+      closeDeleteModal();
+      await loadCatManagerList();
+      if (allChildrenData.length) buildCategoryFilter(allChildrenData);
+    }
+
+    /* ── Kategori filtresi ── */
+    function buildCategoryFilter(data) {
+      const cats = [...new Set(data.map(c => c.category || '').filter(Boolean))].sort();
+      const row  = document.getElementById('categoryFilterRow');
+      if (cats.length === 0) { row.classList.add('hidden'); return; }
+      row.classList.remove('hidden');
+      row.innerHTML = [
+        { val: '', label: 'Tümü' },
+        ...cats.map(c => ({ val: c, label: c })),
+      ].map(({ val, label }) => `
+        <button onclick="setChildCategory('${val.replace(/'/g,"\\'")}')"
+                data-cat="${val}"
+                class="cat-filter-btn ${activeCategory === val ? 'active' : ''}
+                       px-4 py-1.5 rounded-full border-2 border-purple-200 font-black
+                       text-sm text-purple-700 bg-white hover:bg-purple-50 transition-all">
+          ${val ? '🏷️ ' : ''}${label}
+        </button>`
+      ).join('');
+    }
+
+    function setChildCategory(cat) {
+      activeCategory = cat;
+      document.querySelectorAll('.cat-filter-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.cat === cat));
+      renderChildrenGrid();
+    }
+
+    async function loadCategorySelect(selected = '') {
+      const { data } = await supabaseClient.from('categories').select('name').order('name');
+      const sel = document.getElementById('childCategory');
+      sel.innerHTML = '<option value="">— Kategori seçin —</option>' +
+        (data || []).map(c =>
+          `<option value="${c.name}" ${c.name === selected ? 'selected' : ''}>${c.name}</option>`
+        ).join('');
+      if (selected && !(data || []).some(c => c.name === selected)) {
+        /* Daha önce girilmiş ama silinmiş kategori → göster */
+        sel.innerHTML += `<option value="${selected}" selected>${selected} (eski)</option>`;
+      }
+    }
+
+    /* ── Avatar picker ── */
+    function buildAvatarPicker() {
+      document.getElementById('avatarPicker').innerHTML = AVATARS.map(a =>
+        `<button type="button" class="emoji-btn" data-emoji="${a}" onclick="selectAvatar('${a}')">${a}</button>`
+      ).join('');
+    }
+
+    function selectAvatar(emoji) {
+      document.getElementById('childAvatar').value = emoji;
+      document.querySelectorAll('#avatarPicker .emoji-btn').forEach(b =>
+        b.classList.toggle('selected', b.dataset.emoji === emoji));
+      /* Fotoğraf seçilmemişse emoji'yi önizleme olarak göster */
+      if (!selectedPhotoFile && photoRemoved) {
+        document.getElementById('photoPreviewEmoji').textContent = emoji;
+      }
+    }
+
+    /* ── Fotoğraf seçimi ── */
+    function handlePhotoSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (!checkFileSize(file, MAX_PHOTO_MB)) {
+        showToast(`Fotoğraf en fazla ${MAX_PHOTO_MB} MB olabilir!`, 'warning');
+        input.value = '';
+        return;
+      }
+      selectedPhotoFile = file;
+      photoRemoved = false;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('photoPreviewImg').src = e.target.result;
+        document.getElementById('photoPreviewImg').classList.remove('hidden');
+        document.getElementById('photoPreviewEmoji').classList.add('hidden');
+        document.getElementById('removePhotoBtn').classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removePhoto() {
+      selectedPhotoFile = null;
+      photoRemoved = true;
+      document.getElementById('photoInput').value = '';
+      document.getElementById('photoPreviewImg').classList.add('hidden');
+      document.getElementById('photoPreviewImg').src = '';
+      document.getElementById('removePhotoBtn').classList.add('hidden');
+      const emoji = document.getElementById('childAvatar').value || '🧒';
+      document.getElementById('photoPreviewEmoji').textContent = emoji;
+      document.getElementById('photoPreviewEmoji').classList.remove('hidden');
+      document.getElementById('existingPhotoUrl').value = '';
+    }
+
+    /* ── Modal ── */
+    /* Kartlardaki "Düzenle" butonu için — karmaşık string kaçışından kaçınır */
+    function openModalById(id) {
+      const c = allChildrenData.find(x => x.id === id);
+      if (!c) return;
+      openModal(c.id, c.name, c.avatar || '🧒', c.photo_url || '', c.category || '');
+    }
+
+    async function openModal(id = '', name = '', avatar = '🧒', photoUrl = '', category = '') {
+      selectedPhotoFile = null;
+      photoRemoved      = false;
+
+      document.getElementById('editId').value        = id;
+      document.getElementById('childName').value     = name;
+
+      /* Kategorileri yükle, sonra seçili değeri ayarla */
+      await loadCategorySelect(category);
+      document.getElementById('childAvatar').value       = avatar;
+      document.getElementById('existingPhotoUrl').value  = photoUrl;
+      document.getElementById('modalTitle').textContent  = id ? '✏️ Çocuğu Düzenle' : '➕ Çocuk Ekle';
+      document.getElementById('photoInput').value        = '';
+      document.getElementById('removePhotoBtn').classList.add('hidden');
+
+      /* Fotoğraf önizlemesi */
+      const img   = document.getElementById('photoPreviewImg');
+      const emoji = document.getElementById('photoPreviewEmoji');
+      if (photoUrl) {
+        img.src = photoUrl;
+        img.classList.remove('hidden');
+        emoji.classList.add('hidden');
+        document.getElementById('removePhotoBtn').classList.remove('hidden');
+      } else {
+        img.classList.add('hidden');
+        img.src = '';
+        emoji.textContent = avatar;
+        emoji.classList.remove('hidden');
+      }
+
       selectAvatar(avatar);
       document.getElementById('modal').classList.remove('hidden');
     }
@@ -213,28 +560,65 @@
       document.getElementById('modal').classList.add('hidden');
     }
 
+    /* ── Kaydet ── */
     async function saveChild() {
-      const id     = document.getElementById('editId').value;
-      const name   = document.getElementById('childName').value.trim();
-      const avatar = document.getElementById('childAvatar').value;
+      const id       = document.getElementById('editId').value;
+      const name     = document.getElementById('childName').value.trim();
+      const avatar   = document.getElementById('childAvatar').value;
+      const category = document.getElementById('childCategory').value.trim();
+      const btn      = document.getElementById('saveChildBtn');
 
       if (!name) { showToast('Çocuğun adını girin!', 'warning'); return; }
 
-      let error;
-      if (id) {
-        ({ error } = await supabaseClient.from('children').update({ name, avatar }).eq('id', id));
-      } else {
-        ({ error } = await supabaseClient.from('children').insert({ name, avatar }));
+      btn.disabled    = true;
+      btn.textContent = '⏳ Kaydediliyor…';
+
+      try {
+        let photoUrl = document.getElementById('existingPhotoUrl').value;
+
+        /* Yeni fotoğraf yükleme */
+        if (selectedPhotoFile) {
+          /* Önce child kaydını oluştur/güncelle (ID gerekli) */
+          let childId = id;
+          if (!childId) {
+            const { data, error } = await supabaseClient
+              .from('children').insert({ name, avatar, category }).select('id').single();
+            if (error) throw error;
+            childId = data.id;
+          }
+          photoUrl = await uploadChildPhoto(selectedPhotoFile, childId);
+          await supabaseClient.from('children')
+            .update({ name, avatar, category, photo_url: photoUrl }).eq('id', childId);
+          showToast(id ? '✏️ Çocuk güncellendi!' : '✅ Çocuk eklendi!', 'success');
+        } else if (photoRemoved) {
+          if (id) await deleteChildPhoto(photoUrl);
+          photoUrl = null;
+          const payload = { name, avatar, category, photo_url: null };
+          const { error } = id
+            ? await supabaseClient.from('children').update(payload).eq('id', id)
+            : await supabaseClient.from('children').insert({ name, avatar, category });
+          if (error) throw error;
+          showToast(id ? '✏️ Çocuk güncellendi!' : '✅ Çocuk eklendi!', 'success');
+        } else {
+          const payload = { name, avatar, category };
+          const { error } = id
+            ? await supabaseClient.from('children').update(payload).eq('id', id)
+            : await supabaseClient.from('children').insert({ name, avatar, category });
+          if (error) throw error;
+          showToast(id ? '✏️ Çocuk güncellendi!' : '✅ Çocuk eklendi!', 'success');
+        }
+
+        closeModal();
+        await loadChildren();
+      } catch (e) {
+        showToast(e.message, 'error');
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = '💾 Kaydet';
       }
-
-      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
-
-      showToast(id ? '✏️ Çocuk güncellendi!' : '✅ Çocuk eklendi!', 'success');
-      closeModal();
-      await loadChildren();
     }
 
-    /* Silme onayı */
+    /* ── Silme ── */
     function confirmDelete(id, name) {
       deleteTargetId = id;
       document.getElementById('deleteChildName').textContent = name;
@@ -256,8 +640,7 @@
       await loadChildren();
     }
 
-    /* Modal dışına tıklayınca kapat */
-    ['modal','deleteModal'].forEach(id => {
+    ['modal','deleteModal','catManagerModal','catEditModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', e => {
         if (e.target.id === id) document.getElementById(id).classList.add('hidden');
       });

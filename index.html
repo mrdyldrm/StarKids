@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yıldız Çocuklar — Ana Sayfa</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/tailwind.css">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
@@ -12,28 +12,45 @@
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/toast.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/periods.js"></script>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
 
-  <div id="navbar"></div>
+  <div id="navbar">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 no-underline">
+          <span class="text-3xl">⭐</span>
+          <div>
+            <div class="font-black text-purple-700 text-xl leading-tight">Yıldız Çocuklar</div>
+            <div class="text-xs text-purple-400 font-semibold">Yönetim Paneli</div>
+          </div>
+        </a>
+        <div class="w-10 h-10 rounded-full bg-purple-100 animate-pulse"></div>
+      </div>
+    </nav>
+  </div>
 
   <main class="max-w-6xl mx-auto px-4 py-8">
 
     <!-- Başlık -->
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
       <div>
         <h2 class="text-3xl font-black text-purple-800">🏠 Ana Sayfa</h2>
         <p class="text-purple-400 font-semibold">Tüm çocukların puan durumu</p>
       </div>
-      <a href="children.html"
-         class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white
-                font-bold px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105">
-        ➕ Çocuk Ekle
-      </a>
     </div>
 
+    <!-- Dönem navigasyonu -->
+    <div id="periodNavContainer" class="mb-6"></div>
+
     <!-- Özet istatistikler -->
-    <div id="statsRow" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8"></div>
+    <div id="statsRow" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6"></div>
+
+    <!-- Kategori filtresi -->
+    <div id="homeCategoryFilter" class="hidden flex flex-wrap gap-2 mb-5"></div>
 
     <!-- Çocuk kartları -->
     <div id="childrenGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
@@ -58,26 +75,44 @@
         <h3 id="quickModalTitle" class="text-2xl font-black text-purple-700"></h3>
         <button onclick="closeQuickModal()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
       </div>
-
-      <!-- Çocuk adı -->
       <div id="quickChildName" class="flex items-center gap-3 bg-purple-50 rounded-2xl p-3 mb-4">
         <span id="quickChildAvatar" class="text-4xl"></span>
         <span id="quickChildNameText" class="font-black text-purple-800 text-lg"></span>
       </div>
-
-      <!-- Kural seçimi -->
       <label class="block text-sm font-bold text-gray-600 mb-1">Kural Seçin</label>
       <select id="quickRuleSelect"
               class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
                      focus:outline-none focus:border-purple-500 mb-3">
         <option value="">— Kural seçin —</option>
       </select>
+      <label class="block text-sm font-bold text-gray-600 mb-1">📅 Tarih</label>
+      <input id="quickDate" type="date"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-3">
 
-      <!-- Not -->
       <label class="block text-sm font-bold text-gray-600 mb-1">Not (isteğe bağlı)</label>
       <input id="quickNote" type="text" placeholder="Ek not ekleyin…"
              class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
-                    focus:outline-none focus:border-purple-500 mb-5">
+                    focus:outline-none focus:border-purple-500 mb-3">
+
+      <!-- Ek dosya -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">📎 Dosya Ekle (isteğe bağlı)</label>
+      <input type="file" id="quickAttachInput" accept="image/*,.pdf,.doc,.docx" class="hidden"
+             onchange="previewQuickAttach(this)">
+      <div class="flex items-center gap-3 mb-5">
+        <button type="button" onclick="document.getElementById('quickAttachInput').click()"
+                class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-600
+                       font-bold px-4 py-2 rounded-xl text-sm transition-colors">
+          📎 Dosya Seç
+        </button>
+        <div id="quickAttachPreview" class="hidden flex items-center gap-2 flex-1 min-w-0">
+          <img id="quickAttachThumb" src="" alt=""
+               class="hidden w-10 h-10 rounded-lg object-cover border border-gray-200">
+          <span id="quickAttachName" class="text-sm text-gray-600 font-semibold truncate"></span>
+          <button type="button" onclick="clearQuickAttach()"
+                  class="ml-auto text-red-400 hover:text-red-600 text-lg flex-shrink-0">✕</button>
+        </div>
+      </div>
 
       <button id="quickSaveBtn" onclick="saveQuickPoint()"
               class="w-full font-black text-lg py-4 rounded-2xl text-white transition-all
@@ -88,91 +123,191 @@
   </div>
 
   <script>
-    let quickType = '';  // 'reward' | 'penalty'
-    let quickChildId = '';
+    let quickType        = '';
+    let quickChildId     = '';
+    let quickAttachFile  = null;
+    let allHomeChildren  = [];   // dönem puanlı tüm çocuklar (filtre için)
+    let homeCatFilter    = '';   // seçili kategori
+    let userRole         = 'viewer';
 
     (async () => {
       const session = await requireAuth();
       if (!session) return;
+      userRole = await getUserRole();
       renderNav('dashboard');
-      await loadStats();
-      await loadChildren();
-      await loadActivity();
+      await initPeriods('periodNavContainer', async () => { await refreshAll(); });
+      await refreshAll();
     })();
+
+    async function refreshAll() {
+      await Promise.all([loadStats(), loadChildren(), loadActivity()]);
+    }
+
+    /* ── Dönem bazlı log yardımcısı ── */
+    async function fetchPeriodLogs() {
+      let rq = supabaseClient.from('reward_logs').select('child_id, points');
+      let pq = supabaseClient.from('penalty_logs').select('child_id, points');
+      rq = applyPeriodFilter(rq);
+      pq = applyPeriodFilter(pq);
+      const [{ data: rl }, { data: pl }] = await Promise.all([rq, pq]);
+      return { rl: rl || [], pl: pl || [] };
+    }
 
     /* ── İstatistik satırı ── */
     async function loadStats() {
-      const [{ data: children }, { data: rl }, { data: pl }] = await Promise.all([
+      const [{ data: children }, { rl, pl }] = await Promise.all([
         supabaseClient.from('children').select('id'),
-        supabaseClient.from('reward_logs').select('points'),
-        supabaseClient.from('penalty_logs').select('points'),
+        fetchPeriodLogs(),
       ]);
-      const totalReward  = (rl  || []).reduce((s, r) => s + r.points, 0);
-      const totalPenalty = (pl  || []).reduce((s, r) => s + r.points, 0);
+      const totalReward  = rl.reduce((s, r) => s + r.points, 0);
+      const totalPenalty = pl.reduce((s, r) => s + r.points, 0);
 
       document.getElementById('statsRow').innerHTML = `
-        ${stat('👨‍👩‍👧', 'Çocuk Sayısı',    (children||[]).length,  'purple')}
-        ${stat('⭐', 'Toplam Ödül Puanı', totalReward,             'green')}
-        ${stat('⚡', 'Toplam Ceza Puanı', totalPenalty,            'red')}
-        ${stat('🏆', 'Net Puan',          totalReward-totalPenalty, totalReward>=totalPenalty?'green':'red')}
+        ${stat('👨‍👩‍👧', 'Çocuk Sayısı',     (children||[]).length,   'purple')}
+        ${stat('⭐', 'Ödül Puanı',          totalReward,              'green')}
+        ${stat('⚡', 'Ceza Puanı',          totalPenalty,             'red')}
+        ${stat('🏆', 'Net Puan',            totalReward-totalPenalty, totalReward>=totalPenalty?'green':'red')}
       `;
     }
 
     function stat(icon, label, value, color) {
-      const colors = {
-        purple: 'bg-purple-100 text-purple-700',
-        green:  'bg-green-100  text-green-700',
-        red:    'bg-red-100    text-red-700',
-      };
+      const colors = { purple:'bg-purple-100 text-purple-700', green:'bg-green-100 text-green-700', red:'bg-red-100 text-red-700' };
       return `
         <div class="${colors[color]} rounded-2xl p-4 text-center shadow-sm">
           <div class="text-3xl mb-1">${icon}</div>
           <div class="score-badge">${value}</div>
           <div class="text-xs font-bold mt-1 opacity-75">${label}</div>
-        </div>
-      `;
+        </div>`;
     }
 
-    /* ── Çocuk kartları ── */
+    /* ── Çocuk kartları (dönem puanları) ── */
     async function loadChildren() {
-      const { data, error } = await supabaseClient
-        .from('children_scores')
-        .select('*')
-        .order('name');
+      const [{ data: children }, { rl, pl }, { data: allGoals }] = await Promise.all([
+        supabaseClient.from('children').select('*').order('name'),
+        fetchPeriodLogs(),
+        supabaseClient.from('goals').select('*'),
+      ]);
 
       const grid = document.getElementById('childrenGrid');
 
-      if (error || !data || data.length === 0) {
-        grid.innerHTML = `
-          <div class="col-span-full text-center py-14">
-            <div class="text-6xl mb-4">👶</div>
-            <p class="text-gray-400 font-bold text-lg">Henüz çocuk eklenmemiş</p>
-            <a href="children.html"
-               class="inline-block mt-4 bg-purple-600 text-white font-bold px-6 py-3 rounded-2xl hover:bg-purple-700">
-              ➕ İlk Çocuğu Ekle
-            </a>
-          </div>`;
+      if (!children || children.length === 0) {
+        document.getElementById('homeCategoryFilter').classList.add('hidden');
+        allHomeChildren = [];
+        renderHomeGrid();
         return;
       }
 
-      grid.innerHTML = data.map(c => childCard(c)).join('');
+      /* Ay bazlı puan topla */
+      const rMap = {}, pMap = {};
+      rl.forEach(r => { rMap[r.child_id] = (rMap[r.child_id] || 0) + r.points; });
+      pl.forEach(r => { pMap[r.child_id] = (pMap[r.child_id] || 0) + r.points; });
+
+      /* Hedefleri grupla: null child_id = ortak hedef (tüm çocuklar için) */
+      const goalMap     = {};   // kişisel hedefler: child_id → [goals]
+      const globalGoals = [];   // ortak hedefler: child_id NULL
+
+      (allGoals || []).forEach(g => {
+        if (g.child_id === null) {
+          globalGoals.push(g);
+        } else {
+          if (!goalMap[g.child_id]) goalMap[g.child_id] = [];
+          goalMap[g.child_id].push(g);
+        }
+      });
+
+      allHomeChildren = children.map(c => {
+        const reward  = rMap[c.id] || 0;
+        const penalty = pMap[c.id] || 0;
+        const net     = reward - penalty;
+        const goals     = [...globalGoals, ...(goalMap[c.id] || [])];
+        const completed = goals.filter(g => isGoalComplete(g, reward, penalty, net)).length;
+        return { ...c, total_reward_points: reward, total_penalty_points: penalty,
+                 net_score: net, goalTotal: goals.length, goalDone: completed };
+      });
+
+      buildHomeCategoryFilter();
+      renderHomeGrid();
+    }
+
+    function childAvatarEl(c) {
+      return c.photo_url
+        ? `<img src="${c.photo_url}" alt="${c.name}"
+                class="w-14 h-14 rounded-full object-cover border-2 border-purple-200 flex-shrink-0">`
+        : `<span class="text-5xl flex-shrink-0">${c.avatar || '🧒'}</span>`;
+    }
+
+    function buildHomeCategoryFilter() {
+      const cats = [...new Set(allHomeChildren.map(c => c.category || '').filter(Boolean))].sort();
+      const row  = document.getElementById('homeCategoryFilter');
+      if (cats.length === 0) { row.classList.add('hidden'); return; }
+      row.classList.remove('hidden');
+      row.innerHTML = [
+        { val: '', label: 'Tümü' },
+        ...cats.map(c => ({ val: c, label: c })),
+      ].map(({ val, label }) => `
+        <button onclick="setHomeCatFilter('${val.replace(/'/g,"\\'")}')"
+                data-cat="${val}"
+                class="hcat-btn ${homeCatFilter === val ? 'active' : ''}
+                       px-4 py-1.5 rounded-full border-2 border-purple-200 font-black
+                       text-sm text-purple-700 bg-white hover:bg-purple-50 transition-all">
+          ${val ? '🏷️ ' : ''}${label}
+        </button>`
+      ).join('');
+    }
+
+    function setHomeCatFilter(cat) {
+      homeCatFilter = cat;
+      document.querySelectorAll('.hcat-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.cat === cat));
+      renderHomeGrid();
+    }
+
+    function renderHomeGrid() {
+      const filtered = homeCatFilter
+        ? allHomeChildren.filter(c => (c.category || '') === homeCatFilter)
+        : allHomeChildren;
+      const grid = document.getElementById('childrenGrid');
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-14">
+            <div class="text-6xl mb-4">👶</div>
+            <p class="text-gray-400 font-bold text-lg">
+              ${homeCatFilter ? '"' + homeCatFilter + '" kategorisinde çocuk yok' : 'Henüz çocuk eklenmemiş'}
+            </p>
+            ${!homeCatFilter ? `<a href="children.html"
+               class="inline-block mt-4 bg-purple-600 text-white font-bold px-6 py-3 rounded-2xl hover:bg-purple-700">
+               ➕ İlk Çocuğu Ekle
+            </a>` : ''}
+          </div>`;
+        return;
+      }
+      grid.innerHTML = filtered.map(c => childCard(c)).join('');
+    }
+
+    function isGoalComplete(g, reward, penalty, net) {
+      if (g.type === 'min_reward')  return reward  >= g.target_value;
+      if (g.type === 'max_penalty') return penalty <= g.target_value;
+      if (g.type === 'min_net')     return net     >= g.target_value;
+      return false;
     }
 
     function childCard(c) {
-      const net   = c.net_score;
-      const netCls = net >= 0 ? 'text-green-600' : 'text-red-500';
+      const net     = c.net_score;
+      const netCls  = net >= 0 ? 'text-green-600' : 'text-red-500';
       const netSign = net >= 0 ? '+' : '';
       return `
         <div class="child-card bg-white rounded-3xl shadow-md border border-purple-100 p-5
                     hover:border-purple-300 flex flex-col gap-4">
-          <!-- Üst satır -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <span class="text-5xl">${c.avatar}</span>
+              ${childAvatarEl(c)}
               <div>
                 <div class="font-black text-xl text-gray-800">${c.name}</div>
-                <div class="text-xs text-gray-400 font-semibold">
-                  Net Puan: <span class="font-black ${netCls}">${netSign}${net}</span>
+                <div class="flex items-center gap-2 flex-wrap mt-0.5">
+                  ${c.category ? `<span class="text-xs bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-full">🏷️ ${c.category}</span>` : ''}
+                  <span class="text-xs text-gray-400 font-semibold">
+                    Net: <span class="font-black ${netCls}">${netSign}${net}</span>
+                  </span>
                 </div>
               </div>
             </div>
@@ -181,7 +316,6 @@
                       hover:bg-purple-50 transition-colors" title="Detay">›</a>
           </div>
 
-          <!-- Puanlar -->
           <div class="grid grid-cols-2 gap-3">
             <div class="bg-green-50 rounded-2xl p-3 text-center border border-green-100">
               <div class="text-2xl">⭐</div>
@@ -195,7 +329,24 @@
             </div>
           </div>
 
-          <!-- Hızlı butonlar -->
+          <!-- Hedef çubuğu -->
+          ${c.goalTotal > 0 ? `
+          <div class="bg-purple-50 rounded-xl px-3 py-2 flex items-center justify-between">
+            <span class="text-xs font-bold text-purple-600">🎯 Hedefler</span>
+            <div class="flex items-center gap-2">
+              <div class="flex gap-1">
+                ${Array.from({length: c.goalTotal}, (_,i) =>
+                  `<div class="w-4 h-4 rounded-full ${i < c.goalDone ? 'bg-green-500' : 'bg-gray-200'}
+                               border-2 ${i < c.goalDone ? 'border-green-400' : 'border-gray-300'}"></div>`
+                ).join('')}
+              </div>
+              <span class="text-xs font-black ${c.goalDone === c.goalTotal ? 'text-green-600' : 'text-gray-500'}">
+                ${c.goalDone}/${c.goalTotal}
+              </span>
+            </div>
+          </div>` : ''}
+
+          ${userRole !== 'viewer' ? `
           <div class="grid grid-cols-2 gap-2">
             <button onclick="openQuickModal('reward','${c.id}','${c.name}','${c.avatar}')"
                     class="flex items-center justify-center gap-1 bg-green-500 hover:bg-green-600
@@ -207,24 +358,18 @@
                            text-white font-bold py-2 rounded-xl text-sm transition-all hover:scale-105">
               ⚡ Ceza Ver
             </button>
-          </div>
-        </div>
-      `;
+          </div>` : ''}
+        </div>`;
     }
 
-    /* ── Son aktiviteler ── */
+    /* ── Son aktiviteler (seçili dönem) ── */
     async function loadActivity() {
+      let rq = supabaseClient.from('reward_logs').select('*, children(name,avatar,photo_url)')
+        .order('created_at', { ascending: false }).limit(10);
+      let pq = supabaseClient.from('penalty_logs').select('*, children(name,avatar,photo_url)')
+        .order('created_at', { ascending: false }).limit(10);
       const [{ data: rl }, { data: pl }] = await Promise.all([
-        supabaseClient
-          .from('reward_logs')
-          .select('*, children(name,avatar)')
-          .order('created_at', { ascending: false })
-          .limit(10),
-        supabaseClient
-          .from('penalty_logs')
-          .select('*, children(name,avatar)')
-          .order('created_at', { ascending: false })
-          .limit(10),
+        applyPeriodFilter(rq), applyPeriodFilter(pq)
       ]);
 
       const all = [
@@ -234,7 +379,8 @@
 
       const list = document.getElementById('activityList');
       if (all.length === 0) {
-        list.innerHTML = '<p class="text-gray-400 text-center py-6 font-semibold">Henüz aktivite yok</p>';
+        const lbl = currentPeriod ? currentPeriod.name : 'bu dönemde';
+        list.innerHTML = `<p class="text-gray-400 text-center py-6 font-semibold">${lbl} için aktivite yok</p>`;
         return;
       }
 
@@ -247,7 +393,9 @@
         return `
           <div class="log-${item.type} rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 flex-1 min-w-0">
-              <span class="text-2xl flex-shrink-0">${item.children?.avatar || '🧒'}</span>
+              ${item.children?.photo_url
+                ? `<img src="${item.children.photo_url}" class="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-gray-200">`
+                : `<span class="text-2xl flex-shrink-0">${item.children?.avatar || '🧒'}</span>`}
               <div class="min-w-0">
                 <div class="font-bold text-gray-800 truncate">
                   ${item.children?.name} — ${item.rule_icon || (isReward ? '⭐' : '⚡')} ${item.rule_title}
@@ -259,8 +407,7 @@
             <span class="font-black text-lg flex-shrink-0 ${isReward ? 'text-green-600' : 'text-red-500'}">
               ${isReward ? '+' : '-'}${item.points}
             </span>
-          </div>
-        `;
+          </div>`;
       }).join('');
     }
 
@@ -268,27 +415,41 @@
     async function openQuickModal(type, childId, childName, childAvatar) {
       quickType    = type;
       quickChildId = childId;
-
       const isReward = type === 'reward';
       document.getElementById('quickModalTitle').textContent    = isReward ? '⭐ Ödül Ver' : '⚡ Ceza Ver';
       document.getElementById('quickChildAvatar').textContent   = childAvatar;
       document.getElementById('quickChildNameText').textContent = childName;
 
       const btn = document.getElementById('quickSaveBtn');
-      btn.className = btn.className.replace(/bg-\w+-\d+|shadow-\w+/g, '');
-      btn.classList.add(isReward ? 'bg-green-500' : 'bg-red-500',
-                        isReward ? 'shadow-green-300' : 'shadow-red-300');
+      btn.style.background = isReward ? '#22c55e' : '#ef4444';
       btn.textContent = isReward ? '⭐ Ödülü Kaydet' : '⚡ Cezayı Kaydet';
 
-      /* Kuralları yükle */
-      const table = isReward ? 'reward_rules' : 'penalty_rules';
-      const { data } = await supabaseClient.from(table).select('*').order('title');
+      const { data } = await supabaseClient
+        .from(isReward ? 'reward_rules' : 'penalty_rules').select('*').order('title');
       const sel = document.getElementById('quickRuleSelect');
       sel.innerHTML = '<option value="">— Kural seçin —</option>' +
-        (data || []).map(r => `<option value="${r.id}" data-points="${r.points}" data-icon="${r.icon}"
-          data-title="${r.title}">${r.icon} ${r.title} (+${r.points} puan)</option>`).join('');
+        (data || []).map(r =>
+          `<option value="${r.id}" data-points="${r.points}" data-icon="${r.icon}"
+            data-title="${r.title}">${r.icon} ${r.title} (+${r.points} puan)</option>`
+        ).join('');
 
       document.getElementById('quickNote').value = '';
+      clearQuickAttach();
+
+      /* Tarih inputu — dönem sınırları veya bugün */
+      const dateInput = document.getElementById('quickDate');
+      if (currentPeriod) {
+        dateInput.min   = currentPeriod.start_date;
+        dateInput.max   = currentPeriod.end_date;
+        const today = formatDateLocal(new Date());
+        dateInput.value = today >= currentPeriod.start_date && today <= currentPeriod.end_date
+          ? today : currentPeriod.end_date;
+      } else {
+        dateInput.min   = '';
+        dateInput.max   = formatDateLocal(new Date());
+        dateInput.value = formatDateLocal(new Date());
+      }
+
       document.getElementById('quickModal').classList.remove('hidden');
     }
 
@@ -296,38 +457,84 @@
       document.getElementById('quickModal').classList.add('hidden');
     }
 
-    async function saveQuickPoint() {
-      const sel   = document.getElementById('quickRuleSelect');
-      const opt   = sel.options[sel.selectedIndex];
-      const note  = document.getElementById('quickNote').value.trim();
-
-      if (!sel.value) { showToast('Lütfen bir kural seçin!', 'warning'); return; }
-
-      const ruleId    = sel.value;
-      const points    = parseInt(opt.dataset.points);
-      const ruleTitle = opt.dataset.title;
-      const ruleIcon  = opt.dataset.icon;
-
-      const table = quickType === 'reward' ? 'reward_logs' : 'penalty_logs';
-      const { error } = await supabaseClient.from(table).insert({
-        child_id: quickChildId, rule_id: ruleId, rule_title: ruleTitle,
-        rule_icon: ruleIcon, points, note,
-      });
-
-      if (error) { showToast('Hata oluştu: ' + error.message, 'error'); return; }
-
-      showToast(quickType === 'reward' ? '⭐ Ödül başarıyla verildi!' : '⚡ Ceza kaydedildi!',
-                quickType === 'reward' ? 'success' : 'info');
-      closeQuickModal();
-      await loadStats();
-      await loadChildren();
-      await loadActivity();
+    function previewQuickAttach(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (!checkFileSize(file, MAX_ATTACHMENT_MB)) {
+        showToast(`Dosya en fazla ${MAX_ATTACHMENT_MB} MB olabilir!`, 'warning');
+        input.value = ''; return;
+      }
+      quickAttachFile = file;
+      const prev  = document.getElementById('quickAttachPreview');
+      const thumb = document.getElementById('quickAttachThumb');
+      const name  = document.getElementById('quickAttachName');
+      name.textContent = file.name;
+      prev.classList.remove('hidden');
+      if (isImageFile(file)) {
+        const r = new FileReader();
+        r.onload = e => { thumb.src = e.target.result; thumb.classList.remove('hidden'); };
+        r.readAsDataURL(file);
+      } else {
+        thumb.classList.add('hidden');
+      }
     }
 
-    /* Modal dışına tıklayınca kapat */
+    function clearQuickAttach() {
+      quickAttachFile = null;
+      document.getElementById('quickAttachInput').value = '';
+      document.getElementById('quickAttachPreview').classList.add('hidden');
+      document.getElementById('quickAttachThumb').src = '';
+      document.getElementById('quickAttachThumb').classList.add('hidden');
+    }
+
+    async function saveQuickPoint() {
+      const sel  = document.getElementById('quickRuleSelect');
+      const opt  = sel.options[sel.selectedIndex];
+      const note = document.getElementById('quickNote').value.trim();
+      if (!sel.value) { showToast('Lütfen bir kural seçin!', 'warning'); return; }
+
+      const dateVal   = document.getElementById('quickDate').value;
+      const createdAt = dateVal ? dateInputToISO(dateVal) : new Date().toISOString();
+
+      const btn = document.getElementById('quickSaveBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Kaydediliyor…';
+
+      try {
+        let attachmentUrl = null;
+        if (quickAttachFile) attachmentUrl = await uploadLogAttachment(quickAttachFile);
+
+        const { error } = await supabaseClient
+          .from(quickType === 'reward' ? 'reward_logs' : 'penalty_logs')
+          .insert({
+            child_id: quickChildId, rule_id: sel.value,
+            rule_title: opt.dataset.title, rule_icon: opt.dataset.icon,
+            points: parseInt(opt.dataset.points), note,
+            created_at: createdAt,
+            ...(attachmentUrl ? { attachment_url: attachmentUrl } : {}),
+          });
+
+        if (error) throw error;
+      } catch(e) {
+        showToast('Hata: ' + e.message, 'error');
+        btn.disabled = false;
+        btn.textContent = quickType === 'reward' ? '⭐ Ödülü Kaydet' : '⚡ Cezayı Kaydet';
+        return;
+      }
+      btn.disabled = false;
+
+      showToast(quickType === 'reward' ? '⭐ Ödül verildi!' : '⚡ Ceza kaydedildi!',
+                quickType === 'reward' ? 'success' : 'info');
+      closeQuickModal();
+      await refreshAll();
+    }
+
     document.getElementById('quickModal').addEventListener('click', e => {
       if (e.target === document.getElementById('quickModal')) closeQuickModal();
     });
   </script>
+  <style>
+    .hcat-btn.active { background:#7C3AED !important; color:#fff !important; border-color:#7C3AED !important; }
+  </style>
 </body>
 </html>

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yıldız Çocuklar — Giriş</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/tailwind.css">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
@@ -95,7 +95,16 @@
       const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
 
       if (error) {
-        errMsg.textContent = '⚠️ E-posta veya şifre hatalı!';
+        const code = error.code || error.message || '';
+        let msg = '⚠️ E-posta veya şifre hatalı!';
+        if (code.includes('email_not_confirmed') || code.includes('Email not confirmed')) {
+          msg = '📧 E-posta adresiniz henüz onaylanmamış. Gelen kutunuzu kontrol edin veya yöneticiden yeniden gönderme isteyin.';
+        } else if (code.includes('invalid_credentials') || code.includes('Invalid login')) {
+          msg = '⚠️ E-posta veya şifre hatalı!';
+        } else if (error.message) {
+          msg = '⚠️ ' + error.message;
+        }
+        errMsg.textContent = msg;
         errMsg.classList.remove('hidden');
         btn.disabled    = false;
         btn.textContent = '🚀 Giriş Yap';

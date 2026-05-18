@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yıldız Çocuklar — Kurallar</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/tailwind.css">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
@@ -12,10 +12,25 @@
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/toast.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/periods.js"></script>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
 
-  <div id="navbar"></div>
+  <div id="navbar">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 no-underline">
+          <span class="text-3xl">⭐</span>
+          <div>
+            <div class="font-black text-purple-700 text-xl leading-tight">Yıldız Çocuklar</div>
+            <div class="text-xs text-purple-400 font-semibold">Yönetim Paneli</div>
+          </div>
+        </a>
+        <div class="w-10 h-10 rounded-full bg-purple-100 animate-pulse"></div>
+      </div>
+    </nav>
+  </div>
 
   <main class="max-w-5xl mx-auto px-4 py-8">
 
@@ -28,14 +43,18 @@
     </div>
 
     <!-- Tab geçişi -->
-    <div class="flex gap-3 mb-6 bg-white rounded-2xl p-2 shadow-sm border border-purple-100 w-fit">
+    <div class="flex flex-wrap gap-2 mb-6 bg-white rounded-2xl p-2 shadow-sm border border-purple-100 w-fit">
       <button id="tab-reward" onclick="switchTab('reward')"
-              class="tab-btn active px-6 py-3 rounded-xl font-black text-base transition-all">
+              class="tab-btn active px-5 py-3 rounded-xl font-black text-sm transition-all">
         ⭐ Ödül Kuralları
       </button>
       <button id="tab-penalty" onclick="switchTab('penalty')"
-              class="tab-btn px-6 py-3 rounded-xl font-black text-base transition-all text-purple-600">
+              class="tab-btn px-5 py-3 rounded-xl font-black text-sm transition-all text-purple-600">
         ⚡ Ceza Kuralları
+      </button>
+      <button id="tab-goals" onclick="switchTab('goals')"
+              class="tab-btn px-5 py-3 rounded-xl font-black text-sm transition-all text-purple-600">
+        🎯 Ortak Hedefler
       </button>
     </div>
 
@@ -70,6 +89,24 @@
         <div class="col-span-full text-center py-8">
           <div class="text-4xl animate-spin">⚡</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Panel: Ortak Hedefler -->
+    <div id="panel-goals" class="hidden">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h3 class="text-xl font-black text-purple-700">🎯 Ortak Hedefler</h3>
+          <p class="text-sm text-purple-400 font-semibold">Tüm çocuklar için geçerli hedefler</p>
+        </div>
+        <button onclick="openGlobalGoalModal()"
+                class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white
+                       font-bold px-4 py-2 rounded-2xl shadow-lg transition-all hover:scale-105">
+          ➕ Yeni Hedef
+        </button>
+      </div>
+      <div id="globalGoalsList" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="col-span-full text-center py-8"><div class="text-4xl animate-spin">🎯</div></div>
       </div>
     </div>
 
@@ -118,6 +155,68 @@
     </div>
   </div>
 
+  <!-- Ortak Hedef Ekle / Düzenle Modalı -->
+  <div id="globalGoalModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="ggModalTitle" class="text-2xl font-black text-purple-700">🎯 Ortak Hedef Ekle</h3>
+        <button onclick="closeGlobalGoalModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+      </div>
+
+      <input type="hidden" id="ggEditId">
+
+      <!-- Tür -->
+      <label class="block text-sm font-bold text-gray-600 mb-2">Hedef Türü <span class="text-red-400">*</span></label>
+      <div class="grid grid-cols-3 gap-2 mb-4">
+        <button type="button" onclick="selectGGType('min_reward')" data-type="min_reward"
+                class="gg-type-btn flex flex-col items-center gap-1 p-3 rounded-2xl border-2
+                       border-purple-200 hover:border-purple-400 transition-all">
+          <span class="text-2xl">⭐</span><span class="text-xs font-black text-purple-700">Min Ödül</span>
+        </button>
+        <button type="button" onclick="selectGGType('max_penalty')" data-type="max_penalty"
+                class="gg-type-btn flex flex-col items-center gap-1 p-3 rounded-2xl border-2
+                       border-purple-200 hover:border-purple-400 transition-all">
+          <span class="text-2xl">🛡️</span><span class="text-xs font-black text-purple-700">Max Ceza</span>
+        </button>
+        <button type="button" onclick="selectGGType('min_net')" data-type="min_net"
+                class="gg-type-btn flex flex-col items-center gap-1 p-3 rounded-2xl border-2
+                       border-purple-200 hover:border-purple-400 transition-all">
+          <span class="text-2xl">🏆</span><span class="text-xs font-black text-purple-700">Min Net</span>
+        </button>
+      </div>
+      <input type="hidden" id="ggType" value="min_reward">
+
+      <!-- Açıklama ipucu -->
+      <div id="ggTypeHint" class="text-xs text-purple-500 font-semibold bg-purple-50 rounded-xl px-3 py-2 mb-4"></div>
+
+      <!-- Ad -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Hedef Adı <span class="text-red-400">*</span></label>
+      <input id="ggTitle" type="text" placeholder="Örn: Süper Hafta, Ödül Şampiyonu…"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-4 text-base">
+
+      <!-- Hedef değeri -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Hedef Değeri <span class="text-red-400">*</span></label>
+      <div class="flex items-center gap-3 mb-4">
+        <input id="ggTarget" type="number" min="1" max="9999" placeholder="100"
+               class="flex-1 border-2 border-purple-200 rounded-2xl px-4 py-3 font-black text-xl
+                      focus:outline-none focus:border-purple-500">
+        <span id="ggTargetUnit" class="text-2xl font-black text-gray-400">⭐</span>
+      </div>
+
+      <!-- İkon -->
+      <label class="block text-sm font-bold text-gray-600 mb-2">İkon Seç</label>
+      <div id="ggIconPicker" class="flex flex-wrap gap-2 mb-5 p-3 bg-purple-50 rounded-2xl"></div>
+      <input type="hidden" id="ggIcon" value="🎯">
+
+      <button onclick="saveGlobalGoal()"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
+                     py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+        💾 Kaydet
+      </button>
+    </div>
+  </div>
+
   <!-- Silme Onayı -->
   <div id="deleteModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
     <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center">
@@ -143,26 +242,38 @@
   <script>
     const REWARD_ICONS  = ['⭐','🌟','💛','🏆','🎖️','🥇','👍','✅','💪','🎉','📚','🦷','🏠','🤝','📖','🎨','🎵','⚽','🎓','🙌'];
     const PENALTY_ICONS = ['⚠️','❌','😤','🚫','⛔','👎','😔','⏰','🤥','📱','🙉','😡','🔇','📵','🚷'];
+    const GOAL_ICONS    = ['🎯','🏆','⭐','🌟','🎖️','🥇','💪','🚀','🎉','🌈','🦁','🦸','🎪','🏅','💡'];
 
-    let currentTab     = 'reward';
-    let deleteTargetId = null;
+    const GOAL_TYPE_META = {
+      min_reward:  { unit:'⭐', hint:'Çocuk bu dönem en az belirlenen ödül puanını kazanmalı.' },
+      max_penalty: { unit:'⚡', hint:'Çocuk bu dönem ceza puanı limitini aşmamalı.'           },
+      min_net:     { unit:'🏆', hint:'Ödül - Ceza farkı belirlenen değere ulaşmalı.'           },
+    };
+
+    let currentTab       = 'reward';
+    let deleteTargetId   = null;
     let deleteTargetType = null;
+    let ggDeleteId       = null;
 
     (async () => {
       const session = await requireAuth();
       if (!session) return;
+      const ok = await requireRole(['admin']);
+      if (!ok) return;
       renderNav('rules');
+      initPeriodsGlobal();
       await loadRules('reward');
       await loadRules('penalty');
     })();
 
     function switchTab(tab) {
       currentTab = tab;
-      ['reward','penalty'].forEach(t => {
+      ['reward','penalty','goals'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.toggle('active', t === tab);
         document.getElementById(`tab-${t}`).classList.toggle('text-purple-600', t !== tab);
         document.getElementById(`panel-${t}`).classList.toggle('hidden', t !== tab);
       });
+      if (tab === 'goals') loadGlobalGoals();
     }
 
     /* ── Kural listesi ── */
@@ -308,11 +419,203 @@
       await loadRules(deleteTargetType);
     }
 
-    ['ruleModal','deleteModal'].forEach(id => {
+    /* ════════════════════════════════════════════════
+       ORTAK HEDEFLER
+       ════════════════════════════════════════════════ */
+
+    async function loadGlobalGoals() {
+      const { data, error } = await supabaseClient
+        .from('goals').select('*').is('child_id', null).order('created_at');
+
+      const list = document.getElementById('globalGoalsList');
+      if (error || !data || data.length === 0) {
+        list.innerHTML = `
+          <div class="col-span-full text-center py-10">
+            <div class="text-5xl mb-3">🎯</div>
+            <p class="text-gray-400 font-bold">Henüz ortak hedef eklenmemiş</p>
+            <button onclick="openGlobalGoalModal()"
+                    class="mt-3 bg-purple-600 text-white font-bold px-5 py-2 rounded-2xl hover:bg-purple-700">
+              ➕ İlk Hedefi Ekle
+            </button>
+          </div>`;
+        return;
+      }
+
+      /* Her hedef için kaç çocuk tamamladı? */
+      const [{ data: children },{ data: rl },{ data: pl }] = await Promise.all([
+        supabaseClient.from('children').select('id,name,avatar,photo_url'),
+        supabaseClient.from('reward_logs').select('child_id,points'),
+        supabaseClient.from('penalty_logs').select('child_id,points'),
+      ]);
+
+      /* Çocuk başına toplam puan */
+      const rMap = {}, pMap = {};
+      (rl||[]).forEach(r => { rMap[r.child_id] = (rMap[r.child_id]||0) + r.points; });
+      (pl||[]).forEach(r => { pMap[r.child_id] = (pMap[r.child_id]||0) + r.points; });
+
+      list.innerHTML = data.map(g => {
+        const meta = GOAL_TYPE_META[g.type];
+        const typeLabel = { min_reward:'Min Ödül', max_penalty:'Max Ceza', min_net:'Min Net' }[g.type];
+
+        /* Tamamlayan çocuklar */
+        const done = (children||[]).filter(c => {
+          const rw = rMap[c.id]||0, pen = pMap[c.id]||0, net = rw-pen;
+          if (g.type === 'min_reward')  return rw  >= g.target_value;
+          if (g.type === 'max_penalty') return pen <= g.target_value;
+          if (g.type === 'min_net')     return net >= g.target_value;
+          return false;
+        });
+
+        const avatarPile = done.slice(0,5).map(c =>
+          c.photo_url
+            ? `<img src="${c.photo_url}" class="w-7 h-7 rounded-full object-cover border-2 border-white -ml-2 first:ml-0">`
+            : `<span class="w-7 h-7 rounded-full bg-purple-100 border-2 border-white -ml-2 first:ml-0
+                            flex items-center justify-center text-base leading-none">${c.avatar||'🧒'}</span>`
+        ).join('');
+
+        return `
+          <div class="bg-white rounded-2xl shadow-sm border border-purple-100
+                      p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between gap-2 mb-3">
+              <div class="flex items-center gap-3">
+                <span class="text-3xl">${g.icon}</span>
+                <div>
+                  <div class="font-black text-gray-800">${g.title}</div>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-xs bg-purple-100 text-purple-700 font-bold px-2 py-0.5 rounded-full">
+                      ${typeLabel}
+                    </span>
+                    <span class="text-xs font-black text-purple-600">
+                      Hedef: ${g.target_value} ${meta.unit}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex gap-1 flex-shrink-0">
+                <button onclick="openGlobalGoalModal('${g.id}','${escJS(g.title)}','${g.type}',${g.target_value},'${g.icon}')"
+                        class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-bold
+                               px-2 py-1 rounded-xl text-xs">✏️</button>
+                <button onclick="confirmGGDelete('${g.id}','${escJS(g.title)}')"
+                        class="bg-red-100 hover:bg-red-200 text-red-600 font-bold
+                               px-2 py-1 rounded-xl text-xs">🗑️</button>
+              </div>
+            </div>
+
+            <!-- Tamamlayan çocuklar -->
+            <div class="flex items-center gap-2 mt-2">
+              ${done.length > 0
+                ? `<div class="flex items-center">${avatarPile}</div>
+                   <span class="text-xs font-bold text-green-600">
+                     ${done.length} / ${(children||[]).length} çocuk tamamladı ✅
+                   </span>`
+                : `<span class="text-xs font-semibold text-gray-400">
+                     Henüz kimse tamamlamadı
+                   </span>`
+              }
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    /* ── Global goal modal ── */
+    function openGlobalGoalModal(id='', title='', type='min_reward', target=10, icon='🎯') {
+      document.getElementById('ggEditId').value  = id;
+      document.getElementById('ggTitle').value   = title;
+      document.getElementById('ggTarget').value  = target;
+      document.getElementById('ggIcon').value    = icon;
+      document.getElementById('ggModalTitle').textContent = id ? '✏️ Hedefi Düzenle' : '🎯 Ortak Hedef Ekle';
+      selectGGType(type);
+      buildGGIconPicker(icon);
+      document.getElementById('globalGoalModal').classList.remove('hidden');
+    }
+
+    function closeGlobalGoalModal() {
+      document.getElementById('globalGoalModal').classList.add('hidden');
+    }
+
+    function selectGGType(type) {
+      document.getElementById('ggType').value = type;
+      document.querySelectorAll('.gg-type-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.type === type));
+      const meta = GOAL_TYPE_META[type];
+      document.getElementById('ggTypeHint').textContent = meta.hint;
+      document.getElementById('ggTargetUnit').textContent = meta.unit;
+    }
+
+    function buildGGIconPicker(selected) {
+      document.getElementById('ggIconPicker').innerHTML = GOAL_ICONS.map(i =>
+        `<button type="button" class="emoji-btn ${i===selected?'selected':''}"
+                 data-icon="${i}" onclick="selectGGIcon('${i}')">${i}</button>`
+      ).join('');
+    }
+
+    function selectGGIcon(icon) {
+      document.getElementById('ggIcon').value = icon;
+      document.querySelectorAll('#ggIconPicker .emoji-btn').forEach(b =>
+        b.classList.toggle('selected', b.dataset.icon === icon));
+    }
+
+    async function saveGlobalGoal() {
+      const id     = document.getElementById('ggEditId').value;
+      const title  = document.getElementById('ggTitle').value.trim();
+      const type   = document.getElementById('ggType').value;
+      const target = parseInt(document.getElementById('ggTarget').value);
+      const icon   = document.getElementById('ggIcon').value;
+
+      if (!title)         { showToast('Hedef adını girin!',           'warning'); return; }
+      if (!target || target < 1) { showToast('Geçerli bir hedef değeri girin!', 'warning'); return; }
+
+      /* child_id NULL → ortak hedef */
+      const payload = { child_id: null, title, type, target_value: target, icon };
+      let error;
+      if (id) {
+        ({ error } = await supabaseClient.from('goals').update(payload).eq('id', id));
+      } else {
+        ({ error } = await supabaseClient.from('goals').insert(payload));
+      }
+      if (error) {
+        const msg = error.message?.toLowerCase().includes('null')
+          ? '⚠️ Veritabanı güncellemesi gerekiyor! Supabase SQL Editor\'de sql/goals_update.sql dosyasını çalıştırın.'
+          : 'Hata: ' + error.message;
+        showToast(msg, 'error');
+        return;
+      }
+
+      showToast(id ? '✏️ Hedef güncellendi!' : '✅ Ortak hedef eklendi!', 'success');
+      closeGlobalGoalModal();
+      await loadGlobalGoals();
+    }
+
+    function confirmGGDelete(id, title) {
+      ggDeleteId = id;
+      document.getElementById('deleteRuleName').textContent = title;
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('confirmDeleteBtn').onclick = deleteGlobalGoal;
+    }
+
+    async function deleteGlobalGoal() {
+      const { error } = await supabaseClient.from('goals').delete().eq('id', ggDeleteId);
+      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+      showToast('🗑️ Hedef silindi!', 'info');
+      closeDeleteModal();
+      await loadGlobalGoals();
+    }
+
+    /* ── Modal dışı kapatma ── */
+    ['ruleModal','deleteModal','globalGoalModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', e => {
         if (e.target.id === id) document.getElementById(id).classList.add('hidden');
       });
     });
+
+    /* gg-type-btn active stili */
+    document.head.insertAdjacentHTML('beforeend',`
+      <style>
+        .gg-type-btn.active {
+          background:#7C3AED; border-color:#7C3AED; color:#fff;
+        }
+        .gg-type-btn.active span:last-child { color:#fff !important; }
+      </style>`);
   </script>
 </body>
 </html>

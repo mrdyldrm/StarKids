@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yıldız Çocuklar — Kullanıcılar</title>
+  <link rel="stylesheet" href="css/tailwind.css">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="js/client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/toast.js"></script>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
+
+  <div id="navbar">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 no-underline">
+          <span class="text-3xl">⭐</span>
+          <div>
+            <div class="font-black text-purple-700 text-xl leading-tight">Yıldız Çocuklar</div>
+            <div class="text-xs text-purple-400 font-semibold">Yönetim Paneli</div>
+          </div>
+        </a>
+        <div class="w-10 h-10 rounded-full bg-purple-100 animate-pulse"></div>
+      </div>
+    </nav>
+  </div>
+
+  <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Başlık -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+      <div>
+        <h2 class="text-3xl font-black text-purple-800">👥 Kullanıcı Yönetimi</h2>
+        <p class="text-purple-400 font-semibold">Kullanıcıları ve rollerini yönetin</p>
+      </div>
+      <button onclick="openAddModal()"
+              class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white
+                     font-bold px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105">
+        ➕ Kullanıcı Ekle
+      </button>
+    </div>
+
+    <!-- Rol açıklamaları -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div class="bg-white rounded-2xl p-4 border-2 border-purple-200 shadow-sm">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-2xl">👑</span>
+          <span class="font-black text-purple-700 text-lg">Admin</span>
+        </div>
+        <p class="text-sm text-gray-600 font-semibold">Tüm işlemleri yapabilir: çocuk, kural, dönem yönetimi + ödül/ceza + kullanıcı yönetimi.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border-2 border-blue-200 shadow-sm">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-2xl">✏️</span>
+          <span class="font-black text-blue-700 text-lg">Editör</span>
+        </div>
+        <p class="text-sm text-gray-600 font-semibold">Çocuk listesini görür, ödül ve ceza verebilir. Yönetim sayfalarına erişemez.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border-2 border-gray-200 shadow-sm">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-2xl">👁️</span>
+          <span class="font-black text-gray-700 text-lg">İzleyici</span>
+        </div>
+        <p class="text-sm text-gray-600 font-semibold">Yalnızca ana sayfayı görüntüleyebilir. Hiçbir değişiklik yapamaz.</p>
+      </div>
+    </div>
+
+    <!-- Kullanıcı listesi -->
+    <div class="bg-white rounded-3xl shadow-sm border border-purple-100 overflow-hidden">
+      <div class="px-6 py-4 border-b border-purple-100 flex items-center justify-between">
+        <h3 class="text-lg font-black text-purple-700">Kayıtlı Kullanıcılar</h3>
+        <button onclick="loadUsers()"
+                class="text-sm text-purple-500 hover:text-purple-700 font-bold flex items-center gap-1">
+          🔄 Yenile
+        </button>
+      </div>
+      <div id="usersList" class="divide-y divide-purple-50">
+        <div class="text-center py-12">
+          <div class="text-4xl animate-spin inline-block">⭐</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Kullanıcı Ekleme Modalı -->
+  <div id="addModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-2xl font-black text-purple-700">➕ Kullanıcı Ekle</h3>
+        <button onclick="closeAddModal()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5">
+        <p class="text-sm font-bold text-amber-700 mb-1">💡 E-posta Onayı Hakkında</p>
+        <p class="text-sm text-amber-600 font-semibold mb-2">
+          Supabase varsayılan olarak e-posta onayı ister. Kullanıcı giriş yapabilmek için e-postasındaki onay linkine tıklamalıdır.
+        </p>
+        <p class="text-sm text-amber-600 font-semibold">
+          Onay gerekmesini kapatmak için: <strong>Supabase Dashboard → Authentication → Sign In / Up → Confirm email</strong> seçeneğini kapatın.
+        </p>
+      </div>
+
+      <label class="block text-sm font-bold text-gray-600 mb-1">Ad Soyad</label>
+      <input id="addFullName" type="text" placeholder="Örn: Ayşe Yılmaz"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-3">
+
+      <label class="block text-sm font-bold text-gray-600 mb-1">E-posta</label>
+      <input id="addEmail" type="email" placeholder="ornek@email.com"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-3">
+
+      <label class="block text-sm font-bold text-gray-600 mb-1">Şifre</label>
+      <input id="addPassword" type="password" placeholder="En az 6 karakter"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-3">
+
+      <label class="block text-sm font-bold text-gray-600 mb-1">Rol</label>
+      <select id="addRole"
+              class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                     focus:outline-none focus:border-purple-500 mb-5">
+        <option value="viewer">👁️ İzleyici — Yalnızca ana sayfa</option>
+        <option value="editor">✏️ Editör — Ödül/Ceza verebilir</option>
+        <option value="admin">👑 Admin — Tam yetki</option>
+      </select>
+
+      <button id="addSaveBtn" onclick="createUser()"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
+                     py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+        Kullanıcı Oluştur
+      </button>
+    </div>
+  </div>
+
+  <!-- Kullanıcı Düzenleme Modalı -->
+  <div id="editModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-2xl font-black text-purple-700">✏️ Kullanıcıyı Düzenle</h3>
+        <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+      </div>
+
+      <label class="block text-sm font-bold text-gray-600 mb-1">Ad Soyad</label>
+      <input id="editFullName" type="text" placeholder="Ad Soyad"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-3">
+
+      <label class="block text-sm font-bold text-gray-600 mb-1">Rol</label>
+      <select id="editRole"
+              class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                     focus:outline-none focus:border-purple-500 mb-4">
+        <option value="viewer">👁️ İzleyici — Yalnızca ana sayfa</option>
+        <option value="editor">✏️ Editör — Ödül/Ceza verebilir</option>
+        <option value="admin">👑 Admin — Tam yetki</option>
+      </select>
+
+      <div class="border-t border-purple-100 pt-4 mb-4">
+        <p class="text-sm font-black text-gray-600 mb-3">🔑 Şifre Değiştir <span class="font-semibold text-gray-400">(isteğe bağlı)</span></p>
+        <input id="editPassword" type="password" placeholder="Boş bırakılırsa şifre değişmez"
+               class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                      focus:outline-none focus:border-purple-500 mb-2">
+        <input id="editPasswordConfirm" type="password" placeholder="Şifreyi tekrar girin"
+               class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                      focus:outline-none focus:border-purple-500">
+      </div>
+
+      <button id="editSaveBtn" onclick="saveEdit()"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
+                     py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+        Kaydet
+      </button>
+    </div>
+  </div>
+
+  <!-- Silme Onay Modalı -->
+  <div id="deleteModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center">
+      <div class="text-5xl mb-3">⚠️</div>
+      <h3 class="text-xl font-black text-gray-800 mb-2">Kullanıcıyı Kaldır</h3>
+      <p id="deleteModalText" class="text-gray-500 font-semibold mb-5"></p>
+      <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5 text-sm text-amber-700 font-semibold text-left">
+        Bu işlem yalnızca kullanıcının profilini ve rolünü kaldırır. Supabase Auth hesabını silmek için Supabase Dashboard kullanın.
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeDeleteModal()"
+                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl">
+          İptal
+        </button>
+        <button id="confirmDeleteBtn"
+                class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl">
+          Kaldır
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentUserId  = null;
+    let editingUserId  = null;
+    let myUserId       = null;
+
+    const ROLE_INFO = {
+      admin:  { icon: '👑', label: 'Admin',    cls: 'bg-purple-100 text-purple-700 border-purple-200' },
+      editor: { icon: '✏️', label: 'Editör',   cls: 'bg-blue-100 text-blue-700 border-blue-200'      },
+      viewer: { icon: '👁️', label: 'İzleyici', cls: 'bg-gray-100 text-gray-600 border-gray-200'      },
+    };
+
+    (async () => {
+      const session = await requireAuth();
+      if (!session) return;
+      const ok = await requireRole(['admin']);
+      if (!ok) return;
+      myUserId = session.user.id;
+      renderNav('users');
+      await loadUsers();
+    })();
+
+    async function loadUsers() {
+      const el = document.getElementById('usersList');
+      el.innerHTML = '<div class="text-center py-12"><div class="text-4xl animate-spin inline-block">⭐</div></div>';
+
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        el.innerHTML = `<div class="text-center py-10 text-red-500 font-bold">Hata: ${error.message}</div>`;
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        el.innerHTML = '<div class="text-center py-10 text-gray-400 font-bold">Henüz kullanıcı yok.</div>';
+        return;
+      }
+
+      el.innerHTML = data.map(u => userRow(u)).join('');
+    }
+
+    function userRow(u) {
+      const ri       = ROLE_INFO[u.role] || ROLE_INFO.viewer;
+      const isMe     = u.id === myUserId;
+      const initials = (u.full_name || u.email || '?').slice(0, 2).toUpperCase();
+      const joinDate = new Date(u.created_at).toLocaleDateString('tr-TR', {
+        day: '2-digit', month: 'long', year: 'numeric'
+      });
+
+      return `
+        <div class="flex items-center gap-4 px-6 py-4 hover:bg-purple-50 transition-colors">
+          <!-- Avatar -->
+          <div class="w-11 h-11 rounded-full bg-gradient-to-br from-purple-400 to-indigo-500
+                      flex items-center justify-center text-white font-black text-sm flex-shrink-0">
+            ${initials}
+          </div>
+
+          <!-- Bilgi -->
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="font-black text-gray-800 truncate">${u.full_name || '—'}</span>
+              ${isMe ? '<span class="text-xs bg-purple-600 text-white font-bold px-2 py-0.5 rounded-full">Siz</span>' : ''}
+            </div>
+            <div class="text-sm text-gray-400 font-semibold truncate">${u.email || '—'}</div>
+            <div class="text-xs text-gray-300 font-semibold mt-0.5">Katılım: ${joinDate}</div>
+          </div>
+
+          <!-- Rol badge -->
+          <span class="inline-flex items-center gap-1 text-xs font-black px-3 py-1.5
+                       rounded-full border-2 flex-shrink-0 ${ri.cls}">
+            ${ri.icon} ${ri.label}
+          </span>
+
+          <!-- Aksiyonlar -->
+          <div class="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+            <button onclick="resendConfirmation('${(u.email || '').replace(/'/g,"\\'")}', this)"
+                    title="Onay e-postası yeniden gönder"
+                    class="text-sm bg-amber-50 hover:bg-amber-100 text-amber-600 font-bold
+                           px-3 py-1.5 rounded-xl transition-colors">
+              📧
+            </button>
+            <button onclick="openEditModal('${u.id}','${(u.full_name || '').replace(/'/g,"\\'")}','${u.role}')"
+                    class="text-sm bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold
+                           px-3 py-1.5 rounded-xl transition-colors">
+              ✏️ Düzenle
+            </button>
+            ${!isMe ? `
+            <button onclick="openDeleteModal('${u.id}','${(u.full_name || u.email || '').replace(/'/g,"\\'")}' )"
+                    class="text-sm bg-red-50 hover:bg-red-100 text-red-500 font-bold
+                           px-3 py-1.5 rounded-xl transition-colors">
+              🗑️
+            </button>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    /* ── Onay e-postası yeniden gönder ── */
+    async function resendConfirmation(email, btn) {
+      if (!email) { showToast('E-posta adresi bulunamadı!', 'warning'); return; }
+      const orig = btn.textContent;
+      btn.disabled    = true;
+      btn.textContent = '⏳';
+      const { error } = await supabaseClient.auth.resend({ type: 'signup', email });
+      btn.disabled    = false;
+      btn.textContent = orig;
+      if (error) {
+        showToast('Hata: ' + error.message, 'error');
+      } else {
+        showToast(`📧 Onay e-postası ${email} adresine gönderildi!`, 'success');
+      }
+    }
+
+    /* ── Kullanıcı Ekle ── */
+    function openAddModal()  { document.getElementById('addModal').classList.remove('hidden'); }
+    function closeAddModal() { document.getElementById('addModal').classList.add('hidden'); }
+
+    async function createUser() {
+      const fullName = document.getElementById('addFullName').value.trim();
+      const email    = document.getElementById('addEmail').value.trim();
+      const password = document.getElementById('addPassword').value;
+      const role     = document.getElementById('addRole').value;
+      const btn      = document.getElementById('addSaveBtn');
+
+      if (!email)            { showToast('E-posta gerekli!', 'warning'); return; }
+      if (password.length < 6) { showToast('Şifre en az 6 karakter olmalı!', 'warning'); return; }
+
+      btn.disabled    = true;
+      btn.textContent = '⏳ Oluşturuluyor…';
+
+      try {
+        /* Yeni kullanıcıyı oluştur */
+        const { data: signUpData, error: signUpErr } = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName, role },
+          },
+        });
+
+        if (signUpErr) throw signUpErr;
+
+        const newUserId = signUpData?.user?.id;
+
+        /* Profil kaydını güncelle (trigger çalışmışsa) ya da elle ekle */
+        if (newUserId) {
+          await supabaseClient.from('profiles').upsert({
+            id: newUserId, email, full_name: fullName, role,
+          }, { onConflict: 'id' });
+        }
+
+        showToast('✅ Kullanıcı oluşturuldu! E-posta onayı gerekiyorsa kullanıcıya 📧 butonuyla onay e-postası gönderin.', 'success');
+        closeAddModal();
+        document.getElementById('addFullName').value = '';
+        document.getElementById('addEmail').value    = '';
+        document.getElementById('addPassword').value = '';
+        await loadUsers();
+      } catch (e) {
+        showToast('Hata: ' + e.message, 'error');
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Kullanıcı Oluştur';
+      }
+    }
+
+    /* ── Kullanıcı Düzenle ── */
+    function openEditModal(id, fullName, currentRole) {
+      editingUserId = id;
+      document.getElementById('editFullName').value         = fullName;
+      document.getElementById('editRole').value             = currentRole;
+      document.getElementById('editPassword').value         = '';
+      document.getElementById('editPasswordConfirm').value  = '';
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+      editingUserId = null;
+    }
+
+    async function saveEdit() {
+      const fullName = document.getElementById('editFullName').value.trim();
+      const role     = document.getElementById('editRole').value;
+      const pw1      = document.getElementById('editPassword').value;
+      const pw2      = document.getElementById('editPasswordConfirm').value;
+      const btn      = document.getElementById('editSaveBtn');
+
+      /* Şifre girilmişse kontrol et */
+      if (pw1) {
+        if (pw1.length < 6) { showToast('Şifre en az 6 karakter olmalı!', 'warning'); return; }
+        if (pw1 !== pw2)    { showToast('Şifreler eşleşmiyor!', 'warning'); return; }
+      }
+
+      btn.disabled    = true;
+      btn.textContent = '⏳ Kaydediliyor…';
+
+      try {
+        /* Profili güncelle */
+        const { error: profErr } = await supabaseClient
+          .from('profiles')
+          .update({ full_name: fullName, role })
+          .eq('id', editingUserId);
+        if (profErr) throw profErr;
+
+        /* Şifre girilmişse RPC ile değiştir */
+        if (pw1) {
+          const { error: pwErr } = await supabaseClient.rpc('admin_set_user_password', {
+            target_user_id: editingUserId,
+            new_password:   pw1,
+          });
+          if (pwErr) throw pwErr;
+        }
+
+        showToast('✅ Kullanıcı güncellendi!', 'success');
+        closeEditModal();
+        await loadUsers();
+      } catch (e) {
+        showToast('Hata: ' + e.message, 'error');
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = 'Kaydet';
+      }
+    }
+
+    /* ── Kullanıcı Sil ── */
+    function openDeleteModal(id, name) {
+      currentUserId = id;
+      document.getElementById('deleteModalText').textContent =
+        `"${name}" kullanıcısının profili kaldırılacak. Bu işlem geri alınamaz.`;
+      document.getElementById('deleteModal').classList.remove('hidden');
+      document.getElementById('confirmDeleteBtn').onclick = deleteUser;
+    }
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+      currentUserId = null;
+    }
+
+    async function deleteUser() {
+      const { error } = await supabaseClient
+        .from('profiles')
+        .delete()
+        .eq('id', currentUserId);
+
+      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+      showToast('🗑️ Kullanıcı profili kaldırıldı!', 'info');
+      closeDeleteModal();
+      await loadUsers();
+    }
+
+    /* Modal dışına tıklayınca kapat */
+    ['addModal','editModal','deleteModal'].forEach(id => {
+      document.getElementById(id).addEventListener('click', e => {
+        if (e.target.id === id) document.getElementById(id).classList.add('hidden');
+      });
+    });
+  </script>
+</body>
+</html>

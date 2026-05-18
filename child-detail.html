@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yıldız Çocuklar — Çocuk Detayı</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/tailwind.css">
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="config.js"></script>
@@ -12,16 +12,32 @@
   <script src="js/auth.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/toast.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/periods.js"></script>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-indigo-50 min-h-screen">
 
-  <div id="navbar"></div>
+  <div id="navbar">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-2 no-underline">
+          <span class="text-3xl">⭐</span>
+          <div>
+            <div class="font-black text-purple-700 text-xl leading-tight">Yıldız Çocuklar</div>
+            <div class="text-xs text-purple-400 font-semibold">Yönetim Paneli</div>
+          </div>
+        </a>
+        <div class="w-10 h-10 rounded-full bg-purple-100 animate-pulse"></div>
+      </div>
+    </nav>
+  </div>
 
   <!-- Hero başlık -->
   <div id="heroSection"
        class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-8 px-4">
     <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center gap-6">
-      <span id="heroAvatar" class="text-8xl drop-shadow-lg"></span>
+      <div id="heroAvatar" class="flex-shrink-0"></div>
       <div class="text-center sm:text-left">
         <div id="heroName"  class="text-4xl font-black drop-shadow"></div>
         <div id="heroSince" class="text-purple-200 font-semibold text-sm mt-1"></div>
@@ -43,17 +59,17 @@
       </div>
       <!-- Butonlar -->
       <div class="sm:ml-auto flex gap-3 flex-wrap justify-center">
-        <button onclick="openEditModal()"
+        <button onclick="openEditModal()" data-min-role="admin"
                 class="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white
                        font-black px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105 backdrop-blur">
           ✏️ Düzenle
         </button>
-        <button onclick="openPointModal('reward')"
+        <button onclick="openPointModal('reward')" data-min-role="editor"
                 class="flex items-center gap-2 bg-green-400 hover:bg-green-500 text-white
                        font-black px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105">
           ⭐ Ödül Ver
         </button>
-        <button onclick="openPointModal('penalty')"
+        <button onclick="openPointModal('penalty')" data-min-role="editor"
                 class="flex items-center gap-2 bg-red-400 hover:bg-red-500 text-white
                        font-black px-5 py-3 rounded-2xl shadow-lg transition-all hover:scale-105">
           ⚡ Ceza Ver
@@ -63,6 +79,27 @@
   </div>
 
   <main class="max-w-5xl mx-auto px-4 py-8">
+
+    <!-- Dönem navigasyonu -->
+    <div id="periodNavContainer" class="mb-6"></div>
+
+    <!-- Hedefler Bölümü -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h3 class="text-xl font-black text-purple-700">🎯 Aylık Hedefler</h3>
+          <p class="text-sm text-purple-400 font-semibold">Seçili ay için hedef ilerlemesi</p>
+        </div>
+        <button onclick="openGoalModal()" data-min-role="admin"
+                class="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white
+                       font-bold px-4 py-2 rounded-2xl shadow transition-all hover:scale-105 text-sm">
+          ➕ Hedef Ekle
+        </button>
+      </div>
+      <div id="goalsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="col-span-full text-center py-6 text-gray-400 font-semibold">Yükleniyor…</div>
+      </div>
+    </div>
 
     <!-- Tab -->
     <div class="flex gap-3 mb-6 bg-white rounded-2xl p-2 shadow-sm border border-purple-100 w-fit">
@@ -119,11 +156,36 @@
         </div>
       </div>
 
+      <!-- Tarih -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">📅 Tarih</label>
+      <input id="pointDate" type="date"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-3 text-base">
+
       <!-- Not -->
       <label class="block text-sm font-bold text-gray-600 mb-1">Not (isteğe bağlı)</label>
       <input id="pointNote" type="text" placeholder="Bugün ne oldu?"
              class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
-                    focus:outline-none focus:border-purple-500 mb-5 text-base">
+                    focus:outline-none focus:border-purple-500 mb-3 text-base">
+
+      <!-- Ek dosya -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">📎 Dosya Ekle (isteğe bağlı)</label>
+      <input type="file" id="pointAttachInput" accept="image/*,.pdf,.doc,.docx" class="hidden"
+             onchange="previewPointAttach(this)">
+      <div class="flex items-center gap-3 mb-5">
+        <button type="button" onclick="document.getElementById('pointAttachInput').click()"
+                class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-600
+                       font-bold px-4 py-2 rounded-xl text-sm transition-colors">
+          📎 Dosya Seç
+        </button>
+        <div id="pointAttachPreview" class="hidden flex items-center gap-2 flex-1 min-w-0">
+          <img id="pointAttachThumb" src="" alt=""
+               class="hidden w-10 h-10 rounded-lg object-cover border border-gray-200">
+          <span id="pointAttachName" class="text-sm text-gray-600 font-semibold truncate"></span>
+          <button type="button" onclick="clearPointAttach()"
+                  class="ml-auto text-red-400 hover:text-red-600 text-lg flex-shrink-0">✕</button>
+        </div>
+      </div>
 
       <button id="pointSaveBtn" onclick="savePoint()"
               class="w-full font-black text-lg py-4 rounded-2xl text-white
@@ -133,12 +195,136 @@
     </div>
   </div>
 
+  <!-- Hedef Ekle / Düzenle Modalı -->
+  <div id="goalModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h3 id="goalModalTitle" class="text-2xl font-black text-purple-700">🎯 Hedef Ekle</h3>
+        <button onclick="closeGoalModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+      </div>
+
+      <input type="hidden" id="goalEditId">
+
+      <!-- Hedef Adı -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">Hedef Adı <span class="text-red-400">*</span></label>
+      <input id="goalTitle" type="text" placeholder="Örn: Harika Hafta, Ödül Şampiyonu…"
+             class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
+                    focus:outline-none focus:border-purple-500 mb-4 text-base">
+
+      <!-- Hedef Türü -->
+      <label class="block text-sm font-bold text-gray-600 mb-2">Hedef Türü <span class="text-red-400">*</span></label>
+      <div class="grid grid-cols-3 gap-2 mb-4" id="goalTypePicker">
+        <button type="button" onclick="selectGoalType('min_reward')"
+                data-type="min_reward"
+                class="goal-type-btn flex flex-col items-center gap-1 p-3 rounded-2xl border-2
+                       border-purple-200 hover:border-purple-400 transition-all text-center">
+          <span class="text-2xl">⭐</span>
+          <span class="text-xs font-black text-purple-700 leading-tight">Min Ödül</span>
+        </button>
+        <button type="button" onclick="selectGoalType('max_penalty')"
+                data-type="max_penalty"
+                class="goal-type-btn flex flex-col items-center gap-1 p-3 rounded-2xl border-2
+                       border-purple-200 hover:border-purple-400 transition-all text-center">
+          <span class="text-2xl">🛡️</span>
+          <span class="text-xs font-black text-purple-700 leading-tight">Max Ceza</span>
+        </button>
+        <button type="button" onclick="selectGoalType('min_net')"
+                data-type="min_net"
+                class="goal-type-btn flex flex-col items-center gap-1 p-3 rounded-2xl border-2
+                       border-purple-200 hover:border-purple-400 transition-all text-center">
+          <span class="text-2xl">🏆</span>
+          <span class="text-xs font-black text-purple-700 leading-tight">Min Net</span>
+        </button>
+      </div>
+      <input type="hidden" id="goalType" value="min_reward">
+
+      <!-- Hedef Açıklaması (otomatik) -->
+      <div id="goalTypeHint" class="text-xs text-purple-500 font-semibold bg-purple-50
+                                    rounded-xl px-3 py-2 mb-4"></div>
+
+      <!-- Hedef Değeri -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">
+        Hedef Değeri <span class="text-red-400">*</span>
+      </label>
+      <div class="flex items-center gap-3 mb-4">
+        <input id="goalTarget" type="number" min="1" max="9999" placeholder="100"
+               class="flex-1 border-2 border-purple-200 rounded-2xl px-4 py-3 font-black text-xl
+                      focus:outline-none focus:border-purple-500">
+        <span id="goalTargetUnit" class="text-2xl font-black text-gray-400">⭐</span>
+      </div>
+
+      <!-- İkon -->
+      <label class="block text-sm font-bold text-gray-600 mb-2">İkon Seç</label>
+      <div id="goalIconPicker" class="flex flex-wrap gap-2 mb-5 p-3 bg-purple-50 rounded-2xl">
+      </div>
+      <input type="hidden" id="goalIcon" value="🎯">
+
+      <button onclick="saveGoal()"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
+                     py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
+        💾 Kaydet
+      </button>
+    </div>
+  </div>
+
+  <!-- Hedef Silme Onayı -->
+  <div id="goalDeleteModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center">
+      <div class="text-5xl mb-3">🗑️</div>
+      <h3 class="text-xl font-black text-gray-800 mb-2">Hedefi Sil</h3>
+      <p class="text-gray-500 font-semibold mb-6">
+        "<span id="deleteGoalName" class="text-red-500 font-black"></span>" hedefi silinecek.
+      </p>
+      <div class="flex gap-3">
+        <button onclick="closeGoalDeleteModal()"
+                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-2xl">
+          İptal
+        </button>
+        <button id="confirmGoalDeleteBtn"
+                class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-2xl">
+          🗑️ Sil
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Çocuk Düzenleme Modalı -->
   <div id="editChildModal" class="fixed inset-0 modal-overlay z-50 hidden flex items-center justify-center p-4">
-    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+    <div class="modal-box bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-5">
         <h3 class="text-2xl font-black text-purple-700">✏️ Çocuğu Düzenle</h3>
         <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 text-2xl font-bold">✕</button>
+      </div>
+
+      <!-- Fotoğraf -->
+      <div class="flex flex-col items-center mb-5">
+        <div id="editPhotoCircle" onclick="document.getElementById('editPhotoInput').click()"
+             class="relative w-28 h-28 rounded-full overflow-hidden border-4 border-purple-200
+                    cursor-pointer group shadow-md mb-3 bg-purple-50 flex items-center justify-center">
+          <img id="editPhotoImg" src="" alt=""
+               class="hidden w-full h-full object-cover">
+          <span id="editPhotoEmoji" class="text-6xl"></span>
+          <div class="absolute inset-0 bg-black/40 flex flex-col items-center justify-center
+                      opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+            <span class="text-white text-2xl">📷</span>
+            <span class="text-white text-xs font-bold mt-1">Değiştir</span>
+          </div>
+        </div>
+        <input type="file" id="editPhotoInput" accept="image/*" class="hidden"
+               onchange="handleEditPhotoSelect(this)">
+        <input type="hidden" id="editExistingPhoto">
+        <div class="flex gap-2">
+          <button type="button" onclick="document.getElementById('editPhotoInput').click()"
+                  class="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700
+                         font-bold px-3 py-1.5 rounded-xl transition-colors">
+            📷 Fotoğraf Seç
+          </button>
+          <button type="button" id="editRemovePhotoBtn" onclick="removeEditPhoto()" class="hidden
+                  text-xs bg-red-100 hover:bg-red-200 text-red-600 font-bold px-3 py-1.5 rounded-xl">
+            🗑️ Kaldır
+          </button>
+        </div>
+        <p class="text-xs text-gray-400 mt-1.5">JPG, PNG, WebP — max 5 MB</p>
       </div>
 
       <!-- Ad -->
@@ -147,14 +333,16 @@
              class="w-full border-2 border-purple-200 rounded-2xl px-4 py-3 font-semibold
                     focus:outline-none focus:border-purple-500 mb-4 text-base">
 
-      <!-- Avatar seçimi -->
-      <label class="block text-sm font-bold text-gray-600 mb-2">Avatar Seç</label>
+      <!-- Avatar (fotoğraf yoksa) -->
+      <label class="block text-sm font-bold text-gray-600 mb-1">
+        Yedek Avatar <span class="text-gray-400 font-normal">(fotoğraf yoksa gösterilir)</span>
+      </label>
       <div id="editAvatarPicker"
            class="flex flex-wrap gap-2 mb-5 p-3 bg-purple-50 rounded-2xl max-h-40 overflow-y-auto">
       </div>
       <input type="hidden" id="editChildAvatar">
 
-      <button onclick="saveChildEdit()"
+      <button onclick="saveChildEdit()" id="saveEditBtn"
               class="w-full bg-purple-600 hover:bg-purple-700 text-white font-black text-lg
                      py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg">
         💾 Kaydet
@@ -190,57 +378,381 @@
     const params  = new URLSearchParams(location.search);
     const childId = params.get('id');
 
-    let currentTab        = 'reward';
-    let currentPointType  = 'reward';
-    let logDeleteId       = null;
-    let logDeleteType     = null;
-    let rulesCache        = { reward: [], penalty: [] };
-    let currentChild      = null;
+    let currentTab          = 'reward';
+    let currentPointType    = 'reward';
+    let logDeleteId         = null;
+    let logDeleteType       = null;
+    let rulesCache          = { reward: [], penalty: [] };
+    let currentChild        = null;
+    let monthlyReward       = 0;
+    let monthlyPenalty      = 0;
+    let monthlyNet          = 0;
+    let goalDeleteTargetId  = null;
+    let pointAttachFile     = null;
+    let editPhotoFile       = null;
+    let editPhotoRemoved    = false;
+    let userRole            = 'viewer';
 
     if (!childId) { window.location.href = 'children.html'; }
 
     (async () => {
       const session = await requireAuth();
       if (!session) return;
+      userRole = await getUserRole();
       renderNav('children');
+      applyRoleUI();
+      await initPeriods('periodNavContainer', async () => {
+        await loadChild();
+        loadGoals();
+        loadLogs('reward');
+        loadLogs('penalty');
+      });
       await loadChild();
-      await loadRulesCache();
-      await loadLogs('reward');
-      await loadLogs('penalty');
+      await Promise.all([loadRulesCache(), loadGoals(), loadLogs('reward'), loadLogs('penalty')]);
     })();
 
-    /* ── Çocuk bilgileri ── */
+    /* ── Rol bazlı UI kısıtlamaları ──
+       data-min-role="editor"  → editör + admin görebilir
+       data-min-role="admin"   → yalnızca admin görebilir
+    */
+    function applyRoleUI() {
+      document.querySelectorAll('[data-min-role]').forEach(el => {
+        const min = el.dataset.minRole;
+        const visible =
+          (min === 'editor' && (userRole === 'editor' || userRole === 'admin')) ||
+          (min === 'admin'  && userRole === 'admin');
+        if (!visible) el.classList.add('hidden');
+      });
+    }
+
+    /* ── Çocuk bilgileri (dönem puanları) ── */
     async function loadChild() {
-      const { data } = await supabaseClient
-        .from('children_scores')
-        .select('*')
-        .eq('id', childId)
-        .single();
+      const [{ data: child }, { data: rl }, { data: pl }] = await Promise.all([
+        supabaseClient.from('children').select('*').eq('id', childId).single(),
+        applyPeriodFilter(supabaseClient.from('reward_logs').select('points').eq('child_id', childId)),
+        applyPeriodFilter(supabaseClient.from('penalty_logs').select('points').eq('child_id', childId)),
+      ]);
 
-      if (!data) { window.location.href = 'children.html'; return; }
+      if (!child) { window.location.href = 'children.html'; return; }
 
-      currentChild = data;
-      document.title = `${data.name} — Yıldız Çocuklar`;
-      document.getElementById('heroAvatar').textContent = data.avatar;
-      document.getElementById('heroName').textContent   = data.name;
+      currentChild = child;
+      document.title = `${child.name} — Yıldız Çocuklar`;
+      const avatarEl = document.getElementById('heroAvatar');
+      avatarEl.innerHTML = child.photo_url
+        ? `<img src="${child.photo_url}" alt="${child.name}"
+                class="w-24 h-24 rounded-full object-cover border-4 border-white/50 shadow-lg">`
+        : `<span class="text-8xl drop-shadow-lg">${child.avatar || '🧒'}</span>`;
+      document.getElementById('heroName').textContent   = child.name;
       document.getElementById('heroSince').textContent  =
-        `${new Date(data.created_at).toLocaleDateString('tr-TR')} tarihinden beri takip ediliyor`;
+        `${new Date(child.created_at).toLocaleDateString('tr-TR')} tarihinden beri takip ediliyor`;
 
-      document.getElementById('heroReward').textContent  = data.total_reward_points;
-      document.getElementById('heroPenalty').textContent = data.total_penalty_points;
+      monthlyReward  = (rl  || []).reduce((s, r) => s + r.points, 0);
+      monthlyPenalty = (pl || []).reduce((s, r) => s + r.points, 0);
+      monthlyNet     = monthlyReward - monthlyPenalty;
 
-      const net = data.net_score;
+      document.getElementById('heroReward').textContent  = monthlyReward;
+      document.getElementById('heroPenalty').textContent = monthlyPenalty;
       const netEl = document.getElementById('heroNet');
-      netEl.textContent = (net >= 0 ? '+' : '') + net;
-      netEl.className   = `font-black text-2xl ${net >= 0 ? 'text-green-300' : 'text-red-300'}`;
+      netEl.textContent = (monthlyNet >= 0 ? '+' : '') + monthlyNet;
+      netEl.className   = `font-black text-2xl ${monthlyNet >= 0 ? 'text-green-300' : 'text-red-300'}`;
+    }
+
+    /* ════════════════════════════════════════════════
+       HEDEFler
+       ════════════════════════════════════════════════ */
+
+    function escJS(s) { return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+
+    function attachmentEl(url) {
+      if (!url) return '';
+      if (isImageUrl(url)) {
+        return `<a href="${url}" target="_blank" class="block mt-1">
+          <img src="${url}" alt="ek" loading="lazy"
+               class="max-h-32 rounded-xl border border-gray-200 object-cover cursor-pointer
+                      hover:opacity-90 transition-opacity">
+        </a>`;
+      }
+      const name = url.split('/').pop().split('?')[0];
+      return `<a href="${url}" target="_blank"
+                 class="inline-flex items-center gap-1 mt-1 text-xs text-blue-600 font-bold
+                        hover:underline bg-blue-50 px-2 py-1 rounded-lg">
+        📎 ${name}
+      </a>`;
+    }
+
+    const GOAL_ICONS = ['🎯','🏆','⭐','🌟','🎖️','🥇','💪','🚀','🎉','🌈','🦁','🦸','🎪','🏅','💡'];
+
+    const GOAL_TYPE_META = {
+      min_reward:  { label:'En az X ödül puanı kazan',     unit:'⭐', hint:'Çocuk bu ay en az belirlenen ödül puanını kazanmalı.' },
+      max_penalty: { label:'En fazla X ceza puanı al',     unit:'⚡', hint:'Çocuk bu ay ceza puanı limitini aşmamalı.' },
+      min_net:     { label:'Net puan en az X olsun',       unit:'🏆', hint:'Ödül - Ceza farkı belirlenen değere ulaşmalı.' },
+    };
+
+    /* ── Hedefleri yükle & çiz ── */
+    async function loadGoals() {
+      const [{ data: global }, { data: personal }] = await Promise.all([
+        supabaseClient.from('goals').select('*').is('child_id', null).order('created_at'),
+        supabaseClient.from('goals').select('*').eq('child_id', childId).order('created_at'),
+      ]);
+      renderGoals([
+        ...(global  || []).map(g => ({ ...g, _scope: 'global'   })),
+        ...(personal|| []).map(g => ({ ...g, _scope: 'personal' })),
+      ]);
+    }
+
+    function renderGoals(goals) {
+      const grid = document.getElementById('goalsGrid');
+      if (goals.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full text-center py-8 bg-white rounded-2xl border border-dashed border-purple-200">
+            <div class="text-5xl mb-2">🎯</div>
+            <p class="text-gray-400 font-bold">Henüz hedef eklenmemiş</p>
+            ${userRole === 'admin' ? `<button onclick="openGoalModal()"
+                    class="mt-3 bg-purple-600 text-white font-bold px-5 py-2 rounded-2xl
+                           hover:bg-purple-700 text-sm">➕ İlk Hedefi Ekle</button>` : ''}
+          </div>`;
+        return;
+      }
+      grid.innerHTML = goals.map(g => goalCard(g)).join('');
+      requestAnimationFrame(() => {
+        goals.forEach(g => {
+          const bar = document.getElementById(`bar-${g.id}`);
+          if (bar) bar.style.width = bar.dataset.target + '%';
+        });
+      });
+    }
+
+    function goalCard(g) {
+      const { pct, current, label, statusText, barColor, cardAnim, statusColor, sparkle }
+        = calcGoalProgress(g);
+
+      const meta = GOAL_TYPE_META[g.type];
+      const scopeBadge = g._scope === 'global'
+        ? `<span class="text-xs bg-yellow-100 text-yellow-700 font-bold px-2 py-0.5 rounded-full">🌟 Ortak</span>`
+        : `<span class="text-xs bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full">👤 Kişisel</span>`;
+
+      /* Ortak hedefler rules.html'den yönetilir, düzenle/sil butonları gösterilmez */
+      const editBtns = (userRole === 'admin' && g._scope === 'personal') ? `
+        <button onclick="openGoalModal('${g.id}','${escJS(g.title)}','${g.type}',${g.target_value},'${g.icon}')"
+                class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-bold px-2 py-1 rounded-xl text-xs">✏️</button>
+        <button onclick="confirmGoalDelete('${g.id}','${escJS(g.title)}')"
+                class="bg-red-100 hover:bg-red-200 text-red-600 font-bold px-2 py-1 rounded-xl text-xs">🗑️</button>
+      ` : (userRole === 'admin' && g._scope === 'global')
+          ? `<a href="rules.html" class="text-xs text-purple-400 hover:text-purple-600 font-semibold">Kurallar›</a>`
+          : '';
+
+      return `
+        <div class="goal-card ${cardAnim} bg-white rounded-2xl border border-purple-100
+                    shadow-sm p-5 flex flex-col gap-3">
+          <!-- Başlık -->
+          <div class="flex items-start justify-between gap-2">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl ${sparkle ? 'goal-star-burst' : ''}">${g.icon}</span>
+              <div>
+                <div class="font-black text-gray-800 text-base">${g.title}</div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-xs text-gray-400 font-semibold">${meta.label}</span>
+                  ${scopeBadge}
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-1 flex-shrink-0 items-center">
+              ${editBtns}
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div>
+            <div class="flex justify-between text-xs font-bold text-gray-500 mb-1">
+              <span>${label}</span>
+              <span class="${statusColor} font-black">${statusText}</span>
+            </div>
+            <div class="bg-gray-100 rounded-full h-5 overflow-hidden relative">
+              <div id="bar-${g.id}"
+                   class="goal-bar h-full rounded-full flex items-center justify-end pr-2 ${barColor}"
+                   style="width:0%" data-target="${Math.min(pct,100)}">
+                ${pct >= 15 ? `<span class="text-white text-xs font-black">${pct}%</span>` : ''}
+              </div>
+              ${pct < 15 ? `<span class="absolute left-2 top-0 h-full flex items-center
+                                         text-xs font-black text-gray-500">${pct}%</span>` : ''}
+            </div>
+            <div class="flex justify-between mt-1 text-xs font-semibold text-gray-400">
+              <span>Şu an: <strong class="text-gray-700">${current}</strong></span>
+              <span>Hedef: <strong class="text-gray-700">${g.target_value} ${meta.unit}</strong></span>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function calcGoalProgress(g) {
+      const t = g.target_value;
+      let pct, current, label, statusText, barColor, cardAnim = '', statusColor, sparkle = false;
+
+      if (g.type === 'min_reward') {
+        current = monthlyReward;
+        pct = Math.min(100, Math.round(current / t * 100));
+        label = `${current} / ${t} ⭐ ödül puanı`;
+        if (current >= t) {
+          statusText = '🎉 Tamamlandı!'; barColor = 'bg-green-500'; statusColor = 'text-green-600';
+          cardAnim = 'goal-card-complete'; sparkle = true;
+        } else if (pct >= 80) {
+          statusText = `Neredeyse! ${t - current} kaldı`; barColor = 'bg-orange-400';
+          statusColor = 'text-orange-500'; cardAnim = 'goal-card-danger';
+        } else if (pct >= 50) {
+          statusText = `${t - current} puan daha`; barColor = 'bg-yellow-400'; statusColor = 'text-yellow-600';
+        } else {
+          statusText = `${t - current} puan daha`; barColor = 'bg-blue-400'; statusColor = 'text-blue-500';
+        }
+
+      } else if (g.type === 'max_penalty') {
+        current = monthlyPenalty;
+        pct = Math.round(current / t * 100);
+        label = `${current} / ${t} ⚡ ceza puanı kullanıldı`;
+        if (current > t) {
+          statusText = `⛔ Limit aşıldı! +${current - t}`; barColor = 'bg-red-500';
+          statusColor = 'text-red-600'; cardAnim = 'goal-card-exceeded'; pct = 100;
+        } else if (pct >= 80) {
+          statusText = `⚠️ ${t - current} hak kaldı`; barColor = 'bg-orange-400';
+          statusColor = 'text-orange-500'; cardAnim = 'goal-card-danger';
+        } else if (pct >= 50) {
+          statusText = `${t - current} hak kaldı`; barColor = 'bg-yellow-400'; statusColor = 'text-yellow-600';
+        } else {
+          statusText = `✅ Harika! ${t - current} hak var`; barColor = 'bg-green-400';
+          statusColor = 'text-green-600'; sparkle = pct === 0;
+        }
+
+      } else { /* min_net */
+        current = monthlyNet;
+        const safePct = t <= 0 ? 0 : Math.max(0, Math.round(current / t * 100));
+        pct = Math.min(100, safePct);
+        label = `Net: ${current >= 0 ? '+' : ''}${current} / ${t} 🏆`;
+        if (current >= t) {
+          statusText = '🎉 Tamamlandı!'; barColor = 'bg-green-500'; statusColor = 'text-green-600';
+          cardAnim = 'goal-card-complete'; sparkle = true;
+        } else if (pct >= 80) {
+          statusText = `${t - current} puan daha`; barColor = 'bg-orange-400';
+          statusColor = 'text-orange-500'; cardAnim = 'goal-card-danger';
+        } else if (current < 0) {
+          statusText = `${t - current} puan daha`; barColor = 'bg-red-300'; statusColor = 'text-red-500';
+        } else {
+          statusText = `${t - current} puan daha`; barColor = 'bg-blue-400'; statusColor = 'text-blue-500';
+        }
+      }
+
+      return { pct, current, label, statusText, barColor, cardAnim, statusColor, sparkle };
+    }
+
+    /* ── Hedef modal ── */
+    function openGoalModal(id='', title='', type='min_reward', target=10, icon='🎯') {
+      document.getElementById('goalEditId').value = id;
+      document.getElementById('goalTitle').value  = title;
+      document.getElementById('goalTarget').value = target;
+      document.getElementById('goalIcon').value   = icon;
+      document.getElementById('goalModalTitle').textContent = id ? '✏️ Hedefi Düzenle' : '🎯 Hedef Ekle';
+      selectGoalType(type);
+      buildGoalIconPicker(icon);
+      document.getElementById('goalModal').classList.remove('hidden');
+    }
+
+    function closeGoalModal() { document.getElementById('goalModal').classList.add('hidden'); }
+
+    function selectGoalType(type) {
+      document.getElementById('goalType').value = type;
+      document.querySelectorAll('.goal-type-btn').forEach(b => {
+        const active = b.dataset.type === type;
+        b.classList.toggle('bg-purple-600', active);
+        b.classList.toggle('border-purple-600', active);
+        b.classList.toggle('text-white', active);
+        b.querySelector('span:last-child').classList.toggle('text-white', active);
+        b.querySelector('span:last-child').classList.toggle('text-purple-700', !active);
+      });
+      const meta = GOAL_TYPE_META[type];
+      document.getElementById('goalTypeHint').textContent = meta.hint;
+      document.getElementById('goalTargetUnit').textContent = meta.unit;
+    }
+
+    function buildGoalIconPicker(selected) {
+      document.getElementById('goalIconPicker').innerHTML = GOAL_ICONS.map(i =>
+        `<button type="button" class="emoji-btn ${i===selected?'selected':''}"
+                 data-icon="${i}" onclick="selectGoalIcon('${i}')">${i}</button>`
+      ).join('');
+    }
+
+    function selectGoalIcon(icon) {
+      document.getElementById('goalIcon').value = icon;
+      document.querySelectorAll('#goalIconPicker .emoji-btn').forEach(b =>
+        b.classList.toggle('selected', b.dataset.icon === icon));
+    }
+
+    async function saveGoal() {
+      const id     = document.getElementById('goalEditId').value;
+      const title  = document.getElementById('goalTitle').value.trim();
+      const type   = document.getElementById('goalType').value;
+      const target = parseInt(document.getElementById('goalTarget').value);
+      const icon   = document.getElementById('goalIcon').value;
+
+      if (!title)       { showToast('Hedef adını girin!', 'warning'); return; }
+      if (!target || target < 1) { showToast('Geçerli bir hedef değeri girin!', 'warning'); return; }
+
+      const payload = { child_id: childId, title, type, target_value: target, icon };
+      let error;
+      if (id) {
+        ({ error } = await supabaseClient.from('goals').update(payload).eq('id', id));
+      } else {
+        ({ error } = await supabaseClient.from('goals').insert(payload));
+      }
+      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+
+      showToast(id ? '✏️ Hedef güncellendi!' : '🎯 Hedef eklendi!', 'success');
+      closeGoalModal();
+      await loadGoals();
+    }
+
+    function confirmGoalDelete(id, title) {
+      goalDeleteTargetId = id;
+      document.getElementById('deleteGoalName').textContent = title;
+      document.getElementById('goalDeleteModal').classList.remove('hidden');
+      document.getElementById('confirmGoalDeleteBtn').onclick = deleteGoal;
+    }
+
+    function closeGoalDeleteModal() { document.getElementById('goalDeleteModal').classList.add('hidden'); }
+
+    async function deleteGoal() {
+      const { error } = await supabaseClient.from('goals').delete().eq('id', goalDeleteTargetId);
+      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+      showToast('🗑️ Hedef silindi!', 'info');
+      closeGoalDeleteModal();
+      await loadGoals();
     }
 
     /* ── Çocuk düzenleme modalı ── */
     function openEditModal() {
       if (!currentChild) return;
-      document.getElementById('editChildName').value   = currentChild.name;
-      document.getElementById('editChildAvatar').value = currentChild.avatar;
-      buildEditAvatarPicker(currentChild.avatar);
+      editPhotoFile    = null;
+      editPhotoRemoved = false;
+
+      document.getElementById('editChildName').value    = currentChild.name;
+      document.getElementById('editChildAvatar').value  = currentChild.avatar || '🧒';
+      document.getElementById('editExistingPhoto').value = currentChild.photo_url || '';
+      document.getElementById('editPhotoInput').value   = '';
+      document.getElementById('editRemovePhotoBtn').classList.add('hidden');
+
+      /* Fotoğraf önizlemesi */
+      const img   = document.getElementById('editPhotoImg');
+      const emoji = document.getElementById('editPhotoEmoji');
+      if (currentChild.photo_url) {
+        img.src = currentChild.photo_url;
+        img.classList.remove('hidden');
+        emoji.classList.add('hidden');
+        document.getElementById('editRemovePhotoBtn').classList.remove('hidden');
+      } else {
+        img.classList.add('hidden');
+        img.src = '';
+        emoji.textContent = currentChild.avatar || '🧒';
+        emoji.classList.remove('hidden');
+      }
+
+      buildEditAvatarPicker(currentChild.avatar || '🧒');
       document.getElementById('editChildModal').classList.remove('hidden');
     }
 
@@ -248,39 +760,96 @@
       document.getElementById('editChildModal').classList.add('hidden');
     }
 
+    function handleEditPhotoSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (!checkFileSize(file, MAX_PHOTO_MB)) {
+        showToast(`Fotoğraf en fazla ${MAX_PHOTO_MB} MB olabilir!`, 'warning');
+        input.value = ''; return;
+      }
+      editPhotoFile    = file;
+      editPhotoRemoved = false;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img   = document.getElementById('editPhotoImg');
+        const emoji = document.getElementById('editPhotoEmoji');
+        img.src = e.target.result;
+        img.classList.remove('hidden');
+        emoji.classList.add('hidden');
+        document.getElementById('editRemovePhotoBtn').classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeEditPhoto() {
+      editPhotoFile    = null;
+      editPhotoRemoved = true;
+      document.getElementById('editPhotoInput').value = '';
+      document.getElementById('editExistingPhoto').value = '';
+      document.getElementById('editRemovePhotoBtn').classList.add('hidden');
+      const img   = document.getElementById('editPhotoImg');
+      const emoji = document.getElementById('editPhotoEmoji');
+      img.classList.add('hidden');
+      img.src = '';
+      emoji.textContent = document.getElementById('editChildAvatar').value || '🧒';
+      emoji.classList.remove('hidden');
+    }
+
     function buildEditAvatarPicker(selected) {
-      const picker = document.getElementById('editAvatarPicker');
-      picker.innerHTML = AVATARS.map(a =>
-        `<button type="button"
-                 class="emoji-btn ${a === selected ? 'selected' : ''}"
-                 data-emoji="${a}"
-                 onclick="selectEditAvatar('${a}')">${a}</button>`
+      document.getElementById('editAvatarPicker').innerHTML = AVATARS.map(a =>
+        `<button type="button" class="emoji-btn ${a === selected ? 'selected' : ''}"
+                 data-emoji="${a}" onclick="selectEditAvatar('${a}')">${a}</button>`
       ).join('');
     }
 
     function selectEditAvatar(emoji) {
       document.getElementById('editChildAvatar').value = emoji;
-      document.querySelectorAll('#editAvatarPicker .emoji-btn').forEach(b => {
-        b.classList.toggle('selected', b.dataset.emoji === emoji);
-      });
+      document.querySelectorAll('#editAvatarPicker .emoji-btn').forEach(b =>
+        b.classList.toggle('selected', b.dataset.emoji === emoji));
+      /* Fotoğraf seçilmemişse emoji önizlemesini güncelle */
+      if (!editPhotoFile && editPhotoRemoved) {
+        document.getElementById('editPhotoEmoji').textContent = emoji;
+      }
     }
 
     async function saveChildEdit() {
       const name   = document.getElementById('editChildName').value.trim();
       const avatar = document.getElementById('editChildAvatar').value;
+      const btn    = document.getElementById('saveEditBtn');
 
       if (!name) { showToast('Çocuğun adını girin!', 'warning'); return; }
 
-      const { error } = await supabaseClient
-        .from('children')
-        .update({ name, avatar })
-        .eq('id', childId);
+      btn.disabled    = true;
+      btn.textContent = '⏳ Kaydediliyor…';
 
-      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+      try {
+        let photoUrl = document.getElementById('editExistingPhoto').value || null;
 
-      showToast('✅ Bilgiler güncellendi!', 'success');
-      closeEditModal();
-      await loadChild();
+        if (editPhotoFile) {
+          /* Yeni fotoğraf yükle */
+          photoUrl = await uploadChildPhoto(editPhotoFile, childId);
+        } else if (editPhotoRemoved) {
+          /* Fotoğrafı storage'dan sil */
+          if (currentChild.photo_url) await deleteChildPhoto(currentChild.photo_url);
+          photoUrl = null;
+        }
+
+        const { error } = await supabaseClient
+          .from('children')
+          .update({ name, avatar, photo_url: photoUrl })
+          .eq('id', childId);
+
+        if (error) throw error;
+
+        showToast('✅ Bilgiler güncellendi!', 'success');
+        closeEditModal();
+        await loadChild();
+      } catch (e) {
+        showToast('Hata: ' + e.message, 'error');
+      } finally {
+        btn.disabled    = false;
+        btn.textContent = '💾 Kaydet';
+      }
     }
 
     /* ── Kuralları önbelleğe al ── */
@@ -293,17 +862,15 @@
       rulesCache.penalty = pr || [];
     }
 
-    /* ── Log listesi ── */
+    /* ── Log listesi (seçili dönem) ── */
     async function loadLogs(type) {
-      const table   = type === 'reward' ? 'reward_logs' : 'penalty_logs';
-      const listId  = type === 'reward' ? 'rewardLogList' : 'penaltyLogList';
+      const table    = type === 'reward' ? 'reward_logs' : 'penalty_logs';
+      const listId   = type === 'reward' ? 'rewardLogList' : 'penaltyLogList';
       const isReward = type === 'reward';
 
-      const { data } = await supabaseClient
-        .from(table)
-        .select('*')
-        .eq('child_id', childId)
-        .order('created_at', { ascending: false });
+      const { data } = await applyPeriodFilter(
+        supabaseClient.from(table).select('*').eq('child_id', childId)
+      ).order('created_at', { ascending: false });
 
       const el = document.getElementById(listId);
 
@@ -311,7 +878,10 @@
         el.innerHTML = `
           <div class="text-center py-10">
             <div class="text-5xl mb-3">${isReward ? '⭐' : '⚡'}</div>
-            <p class="text-gray-400 font-bold">Henüz ${isReward ? 'ödül' : 'ceza'} kaydı yok</p>
+            <p class="text-gray-400 font-bold">
+              ${currentPeriod ? currentPeriod.name + ' döneminde' : 'Henüz'}
+              ${isReward ? 'ödül' : 'ceza'} kaydı yok
+            </p>
           </div>`;
         return;
       }
@@ -325,9 +895,10 @@
           <div class="log-${type} rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
             <div class="flex items-center gap-3 flex-1 min-w-0">
               <span class="text-3xl flex-shrink-0">${log.rule_icon || (isReward ? '⭐' : '⚡')}</span>
-              <div class="min-w-0">
+              <div class="min-w-0 flex-1">
                 <div class="font-black text-gray-800 truncate">${log.rule_title}</div>
                 ${log.note ? `<div class="text-sm text-gray-500 truncate italic">"${log.note}"</div>` : ''}
+                ${log.attachment_url ? attachmentEl(log.attachment_url) : ''}
                 <div class="text-xs text-gray-400 font-semibold">${dt}</div>
               </div>
             </div>
@@ -335,11 +906,12 @@
               <span class="font-black text-xl ${isReward ? 'text-green-600' : 'text-red-500'}">
                 ${isReward ? '+' : '-'}${log.points}
               </span>
+              ${userRole === 'admin' ? `
               <button onclick="confirmLogDelete('${type}','${log.id}')"
                       class="text-gray-300 hover:text-red-400 transition-colors text-lg p-1 rounded-lg
                              hover:bg-red-50" title="Kaydı sil">
                 🗑️
-              </button>
+              </button>` : ''}
             </div>
           </div>
         `;
@@ -381,11 +953,55 @@
 
       document.getElementById('pointNote').value = '';
       document.getElementById('rulePreview').classList.add('hidden');
+      clearPointAttach();
+
+      /* Tarih inputu — dönem sınırları veya bugün */
+      const dateInput = document.getElementById('pointDate');
+      if (currentPeriod) {
+        dateInput.min   = currentPeriod.start_date;
+        dateInput.max   = currentPeriod.end_date;
+        const today = formatDateLocal(new Date());
+        dateInput.value = today >= currentPeriod.start_date && today <= currentPeriod.end_date
+          ? today : currentPeriod.end_date;
+      } else {
+        dateInput.min   = '';
+        dateInput.max   = formatDateLocal(new Date());
+        dateInput.value = formatDateLocal(new Date());
+      }
+
       document.getElementById('pointModal').classList.remove('hidden');
     }
 
     function closePointModal() {
       document.getElementById('pointModal').classList.add('hidden');
+    }
+
+    function previewPointAttach(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (!checkFileSize(file, MAX_ATTACHMENT_MB)) {
+        showToast(`Dosya en fazla ${MAX_ATTACHMENT_MB} MB olabilir!`, 'warning');
+        input.value = ''; return;
+      }
+      pointAttachFile = file;
+      const prev  = document.getElementById('pointAttachPreview');
+      const thumb = document.getElementById('pointAttachThumb');
+      const name  = document.getElementById('pointAttachName');
+      name.textContent = file.name;
+      prev.classList.remove('hidden');
+      if (isImageFile(file)) {
+        const r = new FileReader();
+        r.onload = e => { thumb.src = e.target.result; thumb.classList.remove('hidden'); };
+        r.readAsDataURL(file);
+      } else { thumb.classList.add('hidden'); }
+    }
+
+    function clearPointAttach() {
+      pointAttachFile = null;
+      document.getElementById('pointAttachInput').value = '';
+      document.getElementById('pointAttachPreview').classList.add('hidden');
+      document.getElementById('pointAttachThumb').src = '';
+      document.getElementById('pointAttachThumb').classList.add('hidden');
     }
 
     /* Kural seçilince önizle */
@@ -409,23 +1025,42 @@
 
       if (!sel.value) { showToast('Lütfen bir kural seçin!', 'warning'); return; }
 
-      const table = currentPointType === 'reward' ? 'reward_logs' : 'penalty_logs';
-      const { error } = await supabaseClient.from(table).insert({
-        child_id:   childId,
-        rule_id:    sel.value,
-        rule_title: opt.dataset.title,
-        rule_icon:  opt.dataset.icon,
-        points:     parseInt(opt.dataset.points),
-        note,
-      });
+      const dateVal   = document.getElementById('pointDate').value;
+      const createdAt = dateVal ? dateInputToISO(dateVal) : new Date().toISOString();
 
-      if (error) { showToast('Hata: ' + error.message, 'error'); return; }
+      const btn = document.getElementById('pointSaveBtn');
+      btn.disabled = true;
+      btn.textContent = '⏳ Kaydediliyor…';
+
+      try {
+        let attachmentUrl = null;
+        if (pointAttachFile) attachmentUrl = await uploadLogAttachment(pointAttachFile);
+
+        const table = currentPointType === 'reward' ? 'reward_logs' : 'penalty_logs';
+        const { error } = await supabaseClient.from(table).insert({
+          child_id:   childId,
+          rule_id:    sel.value,
+          rule_title: opt.dataset.title,
+          rule_icon:  opt.dataset.icon,
+          points:     parseInt(opt.dataset.points),
+          note,
+          created_at: createdAt,
+          ...(attachmentUrl ? { attachment_url: attachmentUrl } : {}),
+        });
+
+        if (error) throw error;
+      } catch(e) {
+        showToast('Hata: ' + e.message, 'error');
+        btn.disabled = false;
+        btn.textContent = currentPointType === 'reward' ? '⭐ Ödülü Kaydet' : '⚡ Cezayı Kaydet';
+        return;
+      }
+      btn.disabled = false;
 
       showToast(currentPointType === 'reward' ? '⭐ Ödül verildi!' : '⚡ Ceza kaydedildi!',
                 currentPointType === 'reward' ? 'success' : 'info');
       closePointModal();
-      await loadChild();
-      await loadLogs(currentPointType);
+      await Promise.all([loadChild(), loadLogs(currentPointType)]);
     }
 
     /* ── Log silme ── */
@@ -446,12 +1081,11 @@
       if (error) { showToast('Silme hatası: ' + error.message, 'error'); return; }
       showToast('🗑️ Kayıt silindi!', 'info');
       closeLogDeleteModal();
-      await loadChild();
-      await loadLogs(logDeleteType);
+      await Promise.all([loadChild(), loadLogs(logDeleteType)]);
     }
 
     /* Modal dışına tıklayınca kapat */
-    ['pointModal','logDeleteModal','editChildModal'].forEach(id => {
+    ['pointModal','logDeleteModal','editChildModal','goalModal','goalDeleteModal'].forEach(id => {
       document.getElementById(id).addEventListener('click', e => {
         if (e.target.id === id) document.getElementById(id).classList.add('hidden');
       });

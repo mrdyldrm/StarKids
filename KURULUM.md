@@ -7,16 +7,21 @@ ChildTracker/
 ├── config.js            ← Supabase bilgilerinizi buraya girin
 ├── login.html           ← Giriş sayfası
 ├── index.html           ← Ana sayfa (dashboard)
-├── children.html        ← Çocuk yönetimi
-├── rules.html           ← Kural yönetimi
+├── children.html        ← Çocuk yönetimi  [Admin]
+├── rules.html           ← Kural yönetimi  [Admin]
+├── periods.html         ← Dönem yönetimi  [Admin]
+├── users.html           ← Kullanıcı yönetimi [Admin]
 ├── child-detail.html    ← Çocuk detay & puan geçmişi
 ├── css/style.css        ← Özel stiller
 ├── js/
 │   ├── client.js        ← Supabase istemcisi
-│   ├── auth.js          ← Oturum yönetimi
-│   ├── nav.js           ← Gezinti çubuğu
+│   ├── auth.js          ← Oturum & rol yönetimi
+│   ├── nav.js           ← Gezinti çubuğu (rol bazlı)
 │   └── toast.js         ← Bildirimler
-└── sql/schema.sql       ← Veritabanı şeması
+└── sql/
+    ├── schema.sql       ← Temel veritabanı şeması
+    ├── users.sql        ← Kullanıcı yönetimi & rol bazlı RLS  ← YENİ
+    └── ...              ← Diğer migrationlar
 ```
 
 ---
@@ -31,18 +36,41 @@ ChildTracker/
 
 ## 2. Veritabanını Kurun
 
-1. Sol menüden **SQL Editor**'e girin
-2. `sql/schema.sql` dosyasının içeriğini kopyalayıp yapıştırın
-3. **Run** butonuna tıklayın
-4. "Success" mesajı görmelisiniz
+Aşağıdaki SQL dosyalarını **sırayla** Supabase → SQL Editor'de çalıştırın:
+
+| Sıra | Dosya | Açıklama |
+|------|-------|----------|
+| 1 | `sql/schema.sql` | Temel tablolar ve RLS |
+| 2 | `sql/categories.sql` | Kategori tablosu |
+| 3 | `sql/goals.sql` | Hedef tablosu |
+| 4 | `sql/goals_update.sql` | Hedef güncellemesi |
+| 5 | `sql/periods.sql` | Dönem tablosu |
+| 6 | `sql/storage.sql` | Dosya depolama |
+| 7 | `sql/category.sql` | Çocuk kategorisi |
+| 8 | `sql/users.sql` | **Kullanıcı yönetimi & rol bazlı RLS** |
 
 ---
 
 ## 3. Yönetici Hesabı Oluşturun
 
 1. Sol menüden **Authentication** → **Users** bölümüne gidin
-2. **"Invite user"** veya **"Add user"** → **"Create new user"** tıklayın
-3. E-posta ve şifre belirleyin (bunlarla giriş yapacaksınız)
+2. **"Add user"** → **"Create new user"** tıklayın
+3. E-posta ve şifre belirleyin
+4. `sql/users.sql` çalıştırıldıysa bu kullanıcı otomatik olarak **Admin** rolü alır
+   (ilk oluşturulan kullanıcı varsayılan admin olur)
+
+---
+
+## 3b. Kullanıcı Rolleri
+
+| Rol | Açıklama |
+|-----|----------|
+| 👑 **Admin** | Her şeyi yapabilir: çocuk, kural, dönem, kullanıcı yönetimi + ödül/ceza |
+| ✏️ **Editör** | Çocuk listesini görür, ödül ve ceza verebilir |
+| 👁️ **İzleyici** | Yalnızca ana sayfayı görüntüleyebilir |
+
+Giriş yaptıktan sonra **Kullanıcılar** sayfasından yeni kullanıcı ekleyebilir,
+mevcut kullanıcıların rollerini değiştirebilirsiniz.
 
 ---
 
@@ -88,12 +116,14 @@ npx serve c:\Repos\ChildTracker
 
 ## Özellikler
 
-| Sayfa | Açıklama |
-|-------|----------|
-| 🏠 Ana Sayfa | Tüm çocuklar, özet istatistikler, son aktiviteler, hızlı puan verme |
-| 👨‍👩‍👧‍👦 Çocuklar | Çocuk ekle/düzenle/sil, emoji avatar seçimi |
-| 📋 Kurallar | Ödül ve ceza kuralları ekle/düzenle/sil, ikon seçimi |
-| 📊 Çocuk Detayı | Ödül & ceza geçmişi, puan ver, kayıt sil |
+| Sayfa | Erişim | Açıklama |
+|-------|--------|----------|
+| 🏠 Ana Sayfa | Tüm kullanıcılar | Özet istatistikler, çocuk kartları, son aktiviteler |
+| 👨‍👩‍👧‍👦 Çocuklar | Admin + Editör | Çocuk listesi; editör yalnızca görüntüler |
+| 📋 Kurallar | Admin | Ödül ve ceza kuralları, global hedefler |
+| 📅 Dönemler | Admin | Dönem oluşturma ve yönetimi |
+| 👥 Kullanıcılar | Admin | Kullanıcı ekleme, rol değiştirme |
+| 📊 Çocuk Detayı | Tüm kullanıcılar | Puan geçmişi; ödül/ceza yalnızca editör+admin, silme yalnızca admin |
 
 ---
 
