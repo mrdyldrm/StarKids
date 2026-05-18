@@ -1,5 +1,5 @@
 {
-  "name": "childtracker",
+  "name": "starkids",
   "version": "1.0.0",
   "description": "",
   "main": "config.js",
@@ -9,16 +9,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mrdyldrm/ChildTracker.git"
+    "url": "git+https://github.com/mrdyldrm/StarKids.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/mrdyldrm/ChildTracker/issues"
+    "url": "https://github.com/mrdyldrm/StarKids/issues"
   },
-  "homepage": "https://github.com/mrdyldrm/ChildTracker#readme",
+  "homepage": "https://github.com/mrdyldrm/StarKids#readme",
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.0",
     "tailwindcss": "^4.3.0"

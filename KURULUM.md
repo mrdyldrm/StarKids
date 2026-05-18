@@ -3,7 +3,7 @@
 ## Proje Yapısı
 
 ```
-ChildTracker/
+StarKids/
 ├── config.js            ← Supabase bilgilerinizi buraya girin
 ├── login.html           ← Giriş sayfası
 ├── index.html           ← Ana sayfa (dashboard)
@@ -102,14 +102,14 @@ bir yerel web sunucusu kullanmanız önerilir:
 
 **Python ile:**
 ```bash
-cd c:\Repos\ChildTracker
+cd c:\Repos\StarKids
 python -m http.server 8080
 # Tarayıcıda: http://localhost:8080/login.html
 ```
 
 **Node.js ile:**
 ```bash
-npx serve c:\Repos\ChildTracker
+npx serve c:\Repos\StarKids
 ```
 
 ---
